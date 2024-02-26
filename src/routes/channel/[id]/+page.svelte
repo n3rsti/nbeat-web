@@ -1,41 +1,34 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import Player from '$lib/Player.svelte';
 
-	let ws: WebSocket;
-	let id: string = '';
+	let id = $page.params.id;
+	let player: Player;
 
 	let message: string = '';
-	let currentSongUrl = '';
-
-	onMount(() => {
-		id = $page.params.id;
-
-		const wsUrl = `ws://localhost:8080/ws/channel/${id}`;
-
-		ws = new WebSocket(wsUrl);
-
-		ws.onopen = () => console.log('WebSocket connection established');
-		ws.onmessage = (event) => {
-			console.log('Message received:', event.data);
-			currentSongUrl = event.data;
-		};
-		ws.onerror = (error) => console.error('WebSocket error:', error);
-		ws.onclose = () => console.log('WebSocket connection closed');
-
-		return () => {
-			ws.close();
-		};
-	});
+	let volume = 50;
 
 	function send() {
-		ws.send(message);
+		if (player) {
+			player.send(message);
+		}
+	}
+	function toggleMute() {
+		player?.toggleMute();
+	}
+	function maxVol() {
+		volume = 100;
+	}
+
+	$: {
+		player?.setVolume(volume);
 	}
 </script>
 
 <h1>Channel {id}</h1>
-<form>
-	<input type="text" bind:value={message} />
-	<button on:click={send}>Send</button>
-</form>
-<iframe title="yt" width="400" height="400" src={currentSongUrl}></iframe>
+<input type="text" bind:value={message} />
+<button on:click={send}>Send</button>
+<button on:click={toggleMute}>Toggle mute</button>
+<button on:click={maxVol}>Max volume</button>
+<input type="range" min="1" max="100" bind:value={volume} />
+<Player bind:this={player} />
