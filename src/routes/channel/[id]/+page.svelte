@@ -1,12 +1,30 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import Player from '$lib/Player.svelte';
+	import { API } from '$lib/data';
+	import { ChannelModel, ChannelBuilder } from '$lib/models/channel.model';
+	import { onMount } from 'svelte';
 
 	let id = $page.params.id;
 	let player: Player;
 
 	let message: string = '';
 	let volume = 50;
+
+	let channel: ChannelModel = new ChannelBuilder();
+
+	onMount(() => {
+		API.getChannel(id)
+			.then((data: ChannelModel) => {
+				channel = data;
+
+				const secondsElapsed = (Date.now() - channel.last_song_played_at) / 1000;
+				player.playMusicById(channel.last_song, secondsElapsed);
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+	});
 
 	function send(event: SubmitEvent) {
 		event.preventDefault();
@@ -20,13 +38,10 @@
 	function maxVol() {
 		volume = 100;
 	}
-
-	$: {
-		player?.setVolume(volume);
-	}
 </script>
 
-<h1>Channel {id}</h1>
+<h1>Channel {channel.name}</h1>
+<h3>Owner {channel.owner}</h3>
 <form on:submit={send}>
 	<input type="text" bind:value={message} />
 	<button>Send</button>

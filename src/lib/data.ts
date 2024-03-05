@@ -1,3 +1,5 @@
+import { goto } from "$app/navigation";
+import { ChannelBuilder, ChannelModel } from "./models/channel.model";
 
 const ENDPOINT = "http://localhost:8080/api"
 
@@ -14,7 +16,14 @@ async function fetchAuthenticated(url: string, options?: RequestInit): Promise<R
 		options.headers['Authorization'] = `Bearer ${token}`;
 	}
 
-	return fetch(url, options);
+	const request = await fetch(url, options);
+	if (request.status === 401) {
+		goto("/login")
+	}
+
+	return request
+
+
 }
 
 
@@ -49,5 +58,25 @@ export const API = {
 		})
 
 		return response
+	},
+
+	async getChannel(id: string): Promise<ChannelModel> {
+		const response = await fetch(`${ENDPOINT}/channel/${id}`)
+
+		if (response.status === 200) {
+			const data = await response.json();
+
+			const channel = new ChannelBuilder()
+				.setId(data._id)
+				.setName(data.name)
+				.setOwner(data.owner)
+				.setLastSong(data.last_song)
+				.setLastSongPlayedAt(data.last_song_played_at)
+				.build()
+
+			return channel
+		}
+
+		throw new Error();
 	}
 }

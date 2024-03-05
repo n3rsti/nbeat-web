@@ -57,6 +57,7 @@ declare global {
 			showinfo?: 0 | 1;
 			start?: number;
 			end?: number;
+			mute?: 0 | 1;
 			// Etc. - Add more player variable options as needed
 		}
 
