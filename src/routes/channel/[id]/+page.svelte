@@ -8,7 +8,8 @@
 	let message: string = '';
 	let volume = 50;
 
-	function send() {
+	function send(event: SubmitEvent) {
+		event.preventDefault();
 		if (player) {
 			player.send(message);
 		}
@@ -26,8 +27,10 @@
 </script>
 
 <h1>Channel {id}</h1>
-<input type="text" bind:value={message} />
-<button on:click={send}>Send</button>
+<form on:submit={send}>
+	<input type="text" bind:value={message} />
+	<button>Send</button>
+</form>
 <button on:click={toggleMute}>Toggle mute</button>
 <button on:click={maxVol}>Max volume</button>
 <input type="range" min="1" max="100" bind:value={volume} />

@@ -19,8 +19,8 @@
 
 			window.onYouTubeIframeAPIReady = () => {
 				player = new YT.Player('player', {
-					height: '390',
-					width: '640',
+					height: '200',
+					width: '200',
 					videoId: '', // Replace with your video ID
 					events: {
 						onStateChange: (event) => {
@@ -39,9 +39,16 @@
 
 		ws = new WebSocket(wsUrl);
 
-		ws.onopen = () => console.log('WebSocket connection established');
+		ws.onopen = () => {
+			const accessToken = localStorage.getItem('accessToken');
+			if (accessToken) {
+				ws.send(`Bearer ${accessToken}`);
+			}
+
+			console.log('WebSocket connection established');
+		};
 		ws.onmessage = (event) => {
-			console.log('Message received:', event.data);
+			console.log('Message received:', event);
 			console.log('ID: ', extractVideoId(event.data));
 			const vidId = extractVideoId(event.data);
 			if (vidId) {
