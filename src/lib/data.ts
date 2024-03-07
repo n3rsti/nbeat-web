@@ -44,6 +44,22 @@ export const API = {
 		return response
 	},
 
+	async register(username: string, password: string) {
+		const body = {
+			id: username,
+			password: password
+		};
+		const response = await fetch(`${ENDPOINT}/register`, {
+			method: 'POST',
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		return response
+	},
+
 	async createChannel(name: string) {
 		const body = {
 			name: name,

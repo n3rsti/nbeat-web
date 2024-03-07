@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { page } from '$app/stores';
 
 	interface QueuedMusic {
@@ -15,40 +15,46 @@
 	let messages: string[] = [];
 	let queue: QueuedMusic[] = [];
 
-	onMount(() => {
-		if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
-			const tag = document.createElement('script');
-			tag.src = 'https://www.youtube.com/iframe_api';
-			document.head.appendChild(tag);
+	onDestroy(() => {
+		if (player && player.destroy) {
+			player.destroy();
+		}
+	});
 
-			window.onYouTubeIframeAPIReady = () => {
-				player = new YT.Player('player', {
-					height: '600',
-					width: '400',
-					videoId: '', // Replace with your video ID
-					playerVars: {
-						autoplay: 1,
-						controls: 1,
-						mute: 1
+	onMount(() => {
+		function load() {
+			player = new YT.Player('player', {
+				height: '600',
+				width: '400',
+				videoId: '', // Replace with your video ID
+				playerVars: {
+					autoplay: 1,
+					controls: 1,
+					mute: 1
+				},
+				events: {
+					onStateChange: (event) => {
+						if (event.data === YT.PlayerState.PLAYING) {
+							console.log(`Video Duration: ${player.getDuration()} seconds`);
+						}
 					},
-					events: {
-						onStateChange: (event) => {
-							if (event.data === YT.PlayerState.PLAYING) {
-								console.log(`Video Duration: ${player.getDuration()} seconds`);
-							}
-						},
-						onReady: () => {
-							if (queue.length > 0) {
-								const song = queue.shift();
-								if (song) {
-									console.log(song);
-									playMusicById(song.id, song.timestamp);
-								}
+					onReady: () => {
+						if (queue.length > 0) {
+							const song = queue.shift();
+							if (song) {
+								console.log(song);
+								playMusicById(song.id, song.timestamp);
 							}
 						}
 					}
-				});
-			};
+				}
+			});
+		}
+
+		if (window.YT) {
+			load();
+		} else {
+			window.onYouTubeIframeAPIReady = load;
 		}
 
 		id = $page.params.id;
@@ -89,7 +95,7 @@
 	}
 
 	export function playMusicById(id: string, startSeconds = 0) {
-		if (player) {
+		if (player && player.loadVideoById) {
 			player.loadVideoById(id, startSeconds, 'small');
 		} else {
 			queue = [...queue, { id: id, timestamp: startSeconds }];
@@ -123,6 +129,9 @@
 </script>
 
 <div id="player"></div>
+<svelte:head>
+	<script src="https://www.youtube.com/iframe_api"></script>
+</svelte:head>
 <ul>
 	{#each messages as message}
 		<li>{message}</li>

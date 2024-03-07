@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import Nav from '$lib/components/Nav.svelte';
 	import { API } from '$lib/data';
 
 	let channelName = '';
@@ -15,6 +16,7 @@
 	}
 </script>
 
+<Nav />
 <form action="" on:submit={createChannel}>
 	<input type="text" bind:value={channelName} />
 	<button>Create</button>

@@ -19,7 +19,8 @@
 				channel = data;
 
 				const secondsElapsed = (Date.now() - channel.last_song_played_at) / 1000;
-				player.playMusicById(channel.last_song, secondsElapsed);
+				console.log(player.playMusicById);
+				player?.playMusicById(channel.last_song, secondsElapsed);
 			})
 			.catch((err) => {
 				console.log(err);
