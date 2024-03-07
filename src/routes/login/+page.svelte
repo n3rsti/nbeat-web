@@ -29,6 +29,6 @@
 <form action="" on:submit={handleLogin}>
 	<input type="text" bind:value={username} />
 	<input type="password" bind:value={password} />
-	<button>Login</button>
+	<button class="text-2xl">Login</button>
 </form>
 {error}

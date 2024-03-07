@@ -36,6 +36,7 @@ declare global {
 			loadVideoByUrl(mediaContentUrl: string, startSeconds?: number, suggestedQuality?: string): void;
 			// Cue a video by URL
 			cueVideoByUrl(mediaContentUrl: string, startSeconds?: number, suggestedQuality?: string): void;
+			destroy(): void;
 		}
 
 		interface PlayerOptions {
