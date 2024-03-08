@@ -8,6 +8,7 @@ export async function GET({ params }) {
 	const API_KEY = YOUTUBE_API_KEY;
 
 	const url = `https://www.googleapis.com/youtube/v3/videos?id=${id}&key=${API_KEY}&part=snippet`;
+	console.log(url);
 
 	try {
 		const response = await fetch(url);

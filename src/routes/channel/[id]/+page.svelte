@@ -3,15 +3,25 @@
 	import Player from '$lib/Player.svelte';
 	import { API } from '$lib/data';
 	import { ChannelModel, ChannelBuilder } from '$lib/models/channel.model';
-	import { onMount } from 'svelte';
+	import { MessageBuilder, type MessageModel } from '$lib/models/message.model';
+	import { afterUpdate, onMount, tick } from 'svelte';
+
+	let ws: WebSocket;
 
 	let id = $page.params.id;
 	let player: Player;
 
 	let message: string = '';
-	let volume = 50;
+	let messages: MessageModel[] = [];
 
 	let channel: ChannelModel = new ChannelBuilder();
+	let chatElement: HTMLElement;
+
+	async function addMessage(message: MessageModel) {
+		messages = [...messages, message];
+
+		scrollDown();
+	}
 
 	onMount(() => {
 		API.getChannel(id)
@@ -24,54 +34,87 @@
 			.catch((err) => {
 				console.log(err);
 			});
+		id = $page.params.id;
+
+		const wsUrl = `ws://localhost:8080/ws/channel/${id}`;
+
+		ws = new WebSocket(wsUrl);
+
+		ws.onopen = () => {
+			const accessToken = localStorage.getItem('accessToken');
+			if (accessToken) {
+				ws.send(`Bearer ${accessToken}`);
+			}
+
+			console.log('WebSocket connection established');
+		};
+		ws.onmessage = (event) => {
+			console.log('Message received:', event);
+			console.log('ID: ', player.extractVideoId(event.data));
+
+			const data = JSON.parse(event.data);
+			let content = data.content;
+			const author = data.author;
+
+			const vidId = player.extractVideoId(content);
+			const message = new MessageBuilder().setAuthor(author).setContent(content).build();
+			if (vidId) {
+				player.playMusicById(vidId, 0);
+				message.content = `Now playing: ${player.getSongName()}`;
+			}
+
+			addMessage(message);
+		};
+		ws.onerror = (error) => console.error('WebSocket error:', error);
+		ws.onclose = () => console.log('WebSocket connection closed');
+
+		return () => {
+			ws.close();
+		};
 	});
+
+	async function scrollDown() {
+		if (chatElement) {
+			await tick();
+			chatElement.scrollTop = chatElement.scrollHeight;
+		}
+	}
 
 	function send(event: SubmitEvent) {
 		event.preventDefault();
-		if (player) {
-			player.send(message);
+		if (message) {
+			ws.send(message);
+			message = '';
 		}
 	}
-	function toggleMute() {
-		player?.toggleMute();
-	}
-	function maxVol() {
-		volume = 100;
-	}
 </script>
-
-<h1>Channel {channel.name}</h1>
-<h3>Owner {channel.owner}</h3>
-<form on:submit={send}>
-	<input type="text" bind:value={message} />
-	<button>Send</button>
-</form>
-<button on:click={toggleMute}>Toggle mute</button>
-<button on:click={maxVol}>Max volume</button>
-<input type="range" min="1" max="100" bind:value={volume} />
 
 <!--
 // v0 by Vercel.
 // https://v0.dev/t/sk10Pyu7PnP
 -->
-<div class="p-8 grid gap-4 grid-cols-[1fr auto]">
-	<div class="grid gap-4">
+<div class="p-8 h-screen flex flex-col">
+	<header class="flex justify-between items-center px-8 mb-4">
 		<div class="flex items-center gap-4">
-			<img
-				width="80"
-				height="80"
-				alt="Channel logo"
-				class="rounded-full aspect-square object-cover border"
-			/>
+			<!-- <img
+					src="/placeholder.svg"
+					width="80"
+					height="80"
+					alt="Channel logo"
+					class="rounded-full aspect-square object-cover border"
+				/> -->
 			<div class="grid gap-1.5">
 				<h1 class="text-2xl font-bold">{channel.name}</h1>
 				<div class="flex items-center gap-2 text-sm">
 					<button
-						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 rounded-md px-3"
-						>Subscribe</button
-					><button
+						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-9 rounded-md px-3"
+					>
+						Subscribe
+					</button>
+					<button
 						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3"
-						><svg
+					>
+						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="24"
 							height="24"
@@ -82,14 +125,17 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							class="w-4 h-4"
-							><path
+						>
+							<path
 								d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-							></path></svg
-						>
+							></path>
+						</svg>
 						Like
-					</button><button
+					</button>
+					<button
 						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3"
-						><svg
+					>
+						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							width="24"
 							height="24"
@@ -100,56 +146,78 @@
 							stroke-linecap="round"
 							stroke-linejoin="round"
 							class="w-4 h-4"
-							><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline
-								points="16 6 12 2 8 6"
-							></polyline><line x1="12" x2="12" y1="2" y2="15"></line></svg
 						>
+							<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+							<polyline points="16 6 12 2 8 6"></polyline>
+							<line x1="12" x2="12" y1="2" y2="15"></line>
+						</svg>
 						Share
 					</button>
 				</div>
 			</div>
 		</div>
+		<nav class="flex items-center gap-4">
+			<a href="/">Home</a>
+			<a
+				class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-10 px-4 py-2"
+				href="/login"
+			>
+				Log in
+			</a>
+			<button
+				class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-10 px-4 py-2"
+			>
+				Log out
+			</button>
+		</nav>
+	</header>
 
-		<Player bind:this={player} />
-		<div class="grid gap-4 pt-4">
-			<div class="grid gap-2">
-				<h2 class="text-xl font-semibold">Chat</h2>
+	<Player bind:this={player} />
+	<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-scroll mb-16">
+		<h2 class="text-xl font-semibold">Chat</h2>
+		<div class="grid gap-2">
+			{#each messages as message}
 				<div class="grid gap-2">
 					<div class="flex items-start gap-2">
-						<img
-							width="32"
-							height="32"
-							alt="Avatar"
-							class="rounded-full object-cover"
-							style="aspect-ratio: 32 / 32; object-fit: cover;"
-						/>
+						<!-- <img
+								width="32"
+								height="32"
+								alt="Avatar"
+								class="rounded-full object-cover"
+								style="aspect-ratio: 32 / 32; object-fit: cover;"
+							/> -->
 
 						<div>
 							<div class="flex items-center gap-2">
-								<div class="font-semibold">User123</div>
+								<div class="font-semibold">{message.author}</div>
 								<div class="text-xs text-gray-500 dark:text-gray-400">2:34pm</div>
 							</div>
 							<p>
-								Hey everyone! Just tuning in to some chill lofi beats. How is everyone's day going?
+								{message.content}
 							</p>
 						</div>
 					</div>
 				</div>
-			</div>
-			<div class="grid gap-2">
+			{/each}
+		</div>
+		<div class="fixed left-0 bottom-0 w-screen h-20 flex items-center justify-center bg-white">
+			<form action="" on:submit={send} class="w-full flex items-center justify-center">
 				<label
 					class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"
 					for="message"
 				>
 					Message
 				</label>
+
 				<input
-					class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-					id="message"
+					type="text"
+					id="default-input"
+					class="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:text-black w-11/12"
 					placeholder="Type your message..."
-					data-id="88"
+					bind:value={message}
+					autocomplete="off"
 				/>
-			</div>
+			</form>
 		</div>
 	</div>
 </div>
