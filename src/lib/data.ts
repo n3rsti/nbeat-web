@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { ChannelBuilder, ChannelModel } from "./models/channel.model";
+import { SongBuilder, SongModel } from "./models/song.model";
 
 const ENDPOINT = "http://localhost:8080/api"
 
@@ -91,6 +92,27 @@ export const API = {
 				.build()
 
 			return channel
+		}
+
+		throw new Error();
+	},
+
+	async getSongData(id: string): Promise<SongModel> {
+		const response = await fetch(`${ENDPOINT}/song/${id}`)
+
+		if (response.status === 200) {
+			const data = await response.json();
+
+			const parsedContent = data.items[0];
+			const song = new SongBuilder()
+				.setId(parsedContent.id)
+				.setName(parsedContent.snippet.title)
+				.setThumbnail(parsedContent.snippet.thumbnails.default.url)
+				.setDuration(parsedContent.contentDetails.duration)
+				.build();
+
+			return song
+
 		}
 
 		throw new Error();

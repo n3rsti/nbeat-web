@@ -1,10 +1,14 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import Player from '$lib/Player.svelte';
+	import Nav from '$lib/components/Nav.svelte';
 	import { API } from '$lib/data';
 	import { ChannelModel, ChannelBuilder } from '$lib/models/channel.model';
 	import { MessageBuilder, type MessageModel } from '$lib/models/message.model';
-	import { afterUpdate, onMount, tick } from 'svelte';
+	import { SongBuilder, SongModel } from '$lib/models/song.model';
+	import { onMount, tick } from 'svelte';
+	import { createPersistentStore } from '../../../stores';
+	import { get } from 'svelte/store';
 
 	let ws: WebSocket;
 
@@ -17,25 +21,44 @@
 	let channel: ChannelModel = new ChannelBuilder();
 	let chatElement: HTMLElement;
 
+	const token = createPersistentStore('accessToken', '');
+	let authorized = get(token) !== '';
+
 	async function addMessage(message: MessageModel) {
 		messages = [...messages, message];
 
 		scrollDown();
 	}
 
-	onMount(() => {
-		API.getChannel(id)
-			.then((data: ChannelModel) => {
-				channel = data;
+	function handleNewMessage(data: any) {
+		const content = data.content;
+		const author = data.author;
 
-				const secondsElapsed = (Date.now() - channel.last_song_played_at) / 1000;
-				player.playMusicById(channel.last_song, secondsElapsed);
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-		id = $page.params.id;
+		const message = new MessageBuilder().setAuthor(author).setContent(content).build();
 
+		addMessage(message);
+	}
+
+	function handleNewSong(data: any) {
+		const content = data.content;
+		const parsedContent = JSON.parse(content).items[0];
+
+		const song = new SongBuilder()
+			.setId(parsedContent.id)
+			.setName(parsedContent.snippet.title)
+			.setThumbnail(parsedContent.snippet.thumbnails.default.url)
+			.setDuration(parsedContent.contentDetails.duration)
+			.build();
+
+		player.playSong(song);
+
+		const messageContent = `Now playing: ${song.name}`;
+		const message = new MessageBuilder().setContent(messageContent).build();
+
+		addMessage(message);
+	}
+
+	function handleWebsocketConnection(id: string) {
 		const wsUrl = `ws://localhost:8080/ws/channel/${id}`;
 
 		ws = new WebSocket(wsUrl);
@@ -45,25 +68,15 @@
 			if (accessToken) {
 				ws.send(`Bearer ${accessToken}`);
 			}
-
-			console.log('WebSocket connection established');
 		};
 		ws.onmessage = (event) => {
-			console.log('Message received:', event);
-			console.log('ID: ', player.extractVideoId(event.data));
-
 			const data = JSON.parse(event.data);
-			let content = data.content;
-			const author = data.author;
 
-			const vidId = player.extractVideoId(content);
-			const message = new MessageBuilder().setAuthor(author).setContent(content).build();
-			if (vidId) {
-				player.playMusicById(vidId, 0);
-				message.content = `Now playing: ${player.getSongName()}`;
+			if (data.type === 'message') {
+				handleNewMessage(data);
+			} else if (data.type === 'song') {
+				handleNewSong(data);
 			}
-
-			addMessage(message);
 		};
 		ws.onerror = (error) => console.error('WebSocket error:', error);
 		ws.onclose = () => console.log('WebSocket connection closed');
@@ -71,6 +84,26 @@
 		return () => {
 			ws.close();
 		};
+	}
+
+	onMount(() => {
+		API.getChannel(id)
+			.then((data: ChannelModel) => {
+				channel = data;
+
+				const secondsElapsed = (Date.now() - channel.last_song_played_at) / 1000;
+
+				API.getSongData(channel.last_song).then((song: SongModel) => {
+					player.playSong(song, secondsElapsed);
+				});
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+
+		id = $page.params.id;
+
+		handleWebsocketConnection(id);
 	});
 
 	async function scrollDown() {
@@ -80,7 +113,7 @@
 		}
 	}
 
-	function send(event: SubmitEvent) {
+	function sendMessage(event: SubmitEvent) {
 		event.preventDefault();
 		if (message) {
 			ws.send(message);
@@ -156,30 +189,16 @@
 				</div>
 			</div>
 		</div>
-		<nav class="flex items-center gap-4">
-			<a href="/">Home</a>
-			<a
-				class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-10 px-4 py-2"
-				href="/login"
-			>
-				Log in
-			</a>
-			<button
-				class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-10 px-4 py-2"
-			>
-				Log out
-			</button>
-		</nav>
+		<Nav />
 	</header>
 
 	<Player bind:this={player} />
+	<h2 class="px-8 text-xl font-semibold">Chat</h2>
 	<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-scroll mb-16">
-		<h2 class="text-xl font-semibold">Chat</h2>
-		<div class="grid gap-2">
+		<div class="flex flex-col gap-4">
 			{#each messages as message}
-				<div class="grid gap-2">
-					<div class="flex items-start gap-2">
-						<!-- <img
+				<div class="flex items-start gap-2">
+					<!-- <img
 								width="32"
 								height="32"
 								alt="Avatar"
@@ -187,37 +206,40 @@
 								style="aspect-ratio: 32 / 32; object-fit: cover;"
 							/> -->
 
-						<div>
-							<div class="flex items-center gap-2">
-								<div class="font-semibold">{message.author}</div>
-								<div class="text-xs text-gray-500 dark:text-gray-400">2:34pm</div>
-							</div>
-							<p>
-								{message.content}
-							</p>
+					<div>
+						<div class="flex items-center gap-2">
+							<div class="font-semibold">{message.author}</div>
+							<div class="text-xs text-gray-500 dark:text-gray-400">2:34pm</div>
 						</div>
+						<p>
+							{message.content}
+						</p>
 					</div>
 				</div>
 			{/each}
 		</div>
-		<div class="fixed left-0 bottom-0 w-screen h-20 flex items-center justify-center bg-white">
-			<form action="" on:submit={send} class="w-full flex items-center justify-center">
-				<label
-					class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"
-					for="message"
-				>
-					Message
-				</label>
+		{#if authorized}
+			<div
+				class="fixed left-0 bottom-0 w-screen h-20 flex items-center justify-center bg-white px-16"
+			>
+				<form action="" on:submit={sendMessage} class="w-full flex items-center justify-center">
+					<label
+						class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"
+						for="message"
+					>
+						Message
+					</label>
 
-				<input
-					type="text"
-					id="default-input"
-					class="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:text-black w-11/12"
-					placeholder="Type your message..."
-					bind:value={message}
-					autocomplete="off"
-				/>
-			</form>
-		</div>
+					<input
+						type="text"
+						id="default-input"
+						class="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:text-black w-full"
+						placeholder="Type your message..."
+						bind:value={message}
+						autocomplete="off"
+					/>
+				</form>
+			</div>
+		{/if}
 	</div>
 </div>
