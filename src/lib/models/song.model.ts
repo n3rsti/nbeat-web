@@ -110,4 +110,17 @@ export class SongBuilder extends SongModel {
 	build(): SongModel {
 		return new SongModel(this.id, this.name, this.thumbnail, this.duration);
 	}
+
+	static buildFromJsonContent(content) {
+		const parsedContent = JSON.parse(content).items[0];
+
+		const song = new SongBuilder()
+			.setId(parsedContent.id)
+			.setName(parsedContent.snippet.title)
+			.setThumbnail(parsedContent.snippet.thumbnails.default.url)
+			.setDuration(parsedContent.contentDetails.duration)
+			.build();
+
+		return song;
+	}
 }

@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { ChannelBuilder, ChannelModel } from "./models/channel.model";
+import { MessageBuilder } from "./models/message.model";
 import { SongBuilder, SongModel } from "./models/song.model";
 
 const ENDPOINT = "http://localhost:8080/api"
@@ -89,6 +90,16 @@ export const API = {
 				.setOwner(data.owner)
 				.setLastSong(data.last_song)
 				.setLastSongPlayedAt(data.last_song_played_at)
+				.setMessages(
+					data.messages.map((message) => {
+						return new MessageBuilder()
+							.setId(message._id)
+							.setAuthor(message.author)
+							.setContent(message.content)
+							.setType(message.type)
+							.build();
+					})
+				)
 				.build()
 
 			return channel

@@ -69,16 +69,10 @@
 					mute: 1
 				},
 				events: {
-					onStateChange: (event) => {
-						if (event.data === YT.PlayerState.PLAYING) {
-							console.log(`Video Duration: ${player.getDuration()} seconds`);
-						}
-					},
 					onReady: () => {
 						if (queue.length > 0) {
 							const song = queue.shift();
 							if (song) {
-								console.log(song);
 								playSongById(song.id, song.timestamp);
 							}
 						}

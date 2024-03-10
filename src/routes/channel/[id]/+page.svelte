@@ -16,7 +16,6 @@
 	let player: Player;
 
 	let message: string = '';
-	let messages: MessageModel[] = [];
 
 	let channel: ChannelModel = new ChannelBuilder();
 	let chatElement: HTMLElement;
@@ -25,37 +24,31 @@
 	let authorized = get(token) !== '';
 
 	async function addMessage(message: MessageModel) {
-		messages = [...messages, message];
+		channel.messages = [...channel.messages, message];
 
 		scrollDown();
 	}
 
-	function handleNewMessage(data: any) {
+	async function handleNewMessage(data: any) {
 		const content = data.content;
 		const author = data.author;
+		const id = data._id;
+		const type = data.type;
 
-		const message = new MessageBuilder().setAuthor(author).setContent(content).build();
+		const message = new MessageBuilder()
+			.setId(id)
+			.setAuthor(author)
+			.setContent(content)
+			.setType(type)
+			.build();
 
 		addMessage(message);
 	}
 
 	function handleNewSong(data: any) {
-		const content = data.content;
-		const parsedContent = JSON.parse(content).items[0];
-
-		const song = new SongBuilder()
-			.setId(parsedContent.id)
-			.setName(parsedContent.snippet.title)
-			.setThumbnail(parsedContent.snippet.thumbnails.default.url)
-			.setDuration(parsedContent.contentDetails.duration)
-			.build();
+		const song = SongBuilder.buildFromJsonContent(data.content);
 
 		player.playSong(song);
-
-		const messageContent = `Now playing: ${song.name}`;
-		const message = new MessageBuilder().setContent(messageContent).build();
-
-		addMessage(message);
 	}
 
 	function handleWebsocketConnection(id: string) {
@@ -72,11 +65,11 @@
 		ws.onmessage = (event) => {
 			const data = JSON.parse(event.data);
 
-			if (data.type === 'message') {
-				handleNewMessage(data);
-			} else if (data.type === 'song') {
+			if (data.type === 'song') {
 				handleNewSong(data);
 			}
+
+			handleNewMessage(data);
 		};
 		ws.onerror = (error) => console.error('WebSocket error:', error);
 		ws.onclose = () => console.log('WebSocket connection closed');
@@ -90,6 +83,8 @@
 		API.getChannel(id)
 			.then((data: ChannelModel) => {
 				channel = data;
+
+				scrollDown();
 
 				const secondsElapsed = (Date.now() - channel.last_song_played_at) / 1000;
 
@@ -193,10 +188,10 @@
 	</header>
 
 	<Player bind:this={player} />
-	<h2 class="px-8 text-xl font-semibold">Chat</h2>
-	<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-scroll mb-16">
+	<h2 class="px-8 mb-4 text-xl font-semibold">Chat</h2>
+	<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-auto mb-16">
 		<div class="flex flex-col gap-4">
-			{#each messages as message}
+			{#each channel.messages as message}
 				<div class="flex items-start gap-2">
 					<!-- <img
 								width="32"
@@ -206,15 +201,39 @@
 								style="aspect-ratio: 32 / 32; object-fit: cover;"
 							/> -->
 
-					<div>
-						<div class="flex items-center gap-2">
-							<div class="font-semibold">{message.author}</div>
-							<div class="text-xs text-gray-500 dark:text-gray-400">2:34pm</div>
+					{#if message.type === 'message'}
+						<div>
+							<div class="flex items-center gap-2">
+								<div class="font-semibold">{message.author}</div>
+								<div class="text-xs text-gray-500 dark:text-gray-400">
+									{message.humanReadableTimestamp}
+								</div>
+							</div>
+							<p>
+								{message.content}
+							</p>
 						</div>
-						<p>
-							{message.content}
-						</p>
-					</div>
+					{:else if message.type === 'song'}
+						<div>
+							<div class="text-xs text-gray-500 dark:text-gray-400">
+								{message.humanReadableTimestamp}
+							</div>
+							<div class="flex gap-3 items-center">
+								<span class="text-gray-700"> Now playing </span>
+								<img
+									src={message.formattedSongMessage.thumbnail}
+									class="w-6 h-6 object-cover rounded-lg"
+									alt=""
+								/>
+								<span class="font-semibold">
+									{message.formattedSongMessage.name}
+								</span>
+								<span class="text-xs text-gray-500">
+									({message.formattedSongMessage.readableDuration})
+								</span>
+							</div>
+						</div>
+					{/if}
 				</div>
 			{/each}
 		</div>

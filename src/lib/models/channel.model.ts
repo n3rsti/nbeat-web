@@ -1,12 +1,14 @@
+import type { MessageModel } from "./message.model";
+
 export class ChannelModel {
 	private _id: string;
 	private _name: string;
 	private _owner: string;
 	private _last_song: string;
 	private _last_song_played_at: number;
-	private _messages: string[];
+	private _messages: MessageModel[];
 
-	constructor(id: string, name: string, owner: string, last_song: string, last_song_played_at: number, messages: string[]) {
+	constructor(id: string, name: string, owner: string, last_song: string, last_song_played_at: number, messages: MessageModel[]) {
 		this._id = id;
 		this._name = name;
 		this._owner = owner;
@@ -55,11 +57,11 @@ export class ChannelModel {
 		this._last_song_played_at = value;
 	}
 
-	get messages(): string[] {
+	get messages(): MessageModel[] {
 		return this._messages;
 	}
 
-	set messages(value: string[]) {
+	set messages(value: MessageModel[]) {
 		this._messages = value;
 	}
 }
@@ -94,7 +96,7 @@ export class ChannelBuilder extends ChannelModel {
 		return this;
 	}
 
-	setMessages(messages: string[]) {
+	setMessages(messages: MessageModel[]) {
 		this.messages = messages;
 		return this;
 	}
