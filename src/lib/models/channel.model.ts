@@ -1,20 +1,21 @@
 import type { MessageModel } from "./message.model";
+import { SongBuilder, type SongModel } from "./song.model";
 
 export class ChannelModel {
 	private _id: string;
 	private _name: string;
 	private _owner: string;
-	private _last_song: string;
-	private _last_song_played_at: number;
+	private _lastSong: SongModel;
 	private _messages: MessageModel[];
+	private _queue: SongModel[];
 
-	constructor(id: string, name: string, owner: string, last_song: string, last_song_played_at: number, messages: MessageModel[]) {
+	constructor(id: string, name: string, owner: string, lastSong: SongModel, messages: MessageModel[], queue: SongModel[]) {
 		this._id = id;
 		this._name = name;
 		this._owner = owner;
-		this._last_song = last_song;
-		this._last_song_played_at = last_song_played_at;
 		this._messages = messages;
+		this._lastSong = lastSong;
+		this._queue = queue;
 	}
 
 	get id(): string {
@@ -41,20 +42,12 @@ export class ChannelModel {
 		this._owner = value;
 	}
 
-	get last_song(): string {
-		return this._last_song;
+	get lastSong(): SongModel {
+		return this._lastSong;
 	}
 
-	set last_song(value: string) {
-		this._last_song = value;
-	}
-
-	get last_song_played_at(): number {
-		return this._last_song_played_at;
-	}
-
-	set last_song_played_at(value: number) {
-		this._last_song_played_at = value;
+	set lastSong(value: SongModel) {
+		this._lastSong = value;
 	}
 
 	get messages(): MessageModel[] {
@@ -64,11 +57,19 @@ export class ChannelModel {
 	set messages(value: MessageModel[]) {
 		this._messages = value;
 	}
+
+	get queue() {
+		return this._queue;
+	}
+
+	set queue(queue: SongModel[]) {
+		this._queue = queue;
+	}
 }
 
 export class ChannelBuilder extends ChannelModel {
 	constructor() {
-		super('', '', '', '', 0, [])
+		super('', '', '', new SongBuilder().build(), [], [])
 	}
 
 	setId(id: string) {
@@ -86,13 +87,8 @@ export class ChannelBuilder extends ChannelModel {
 		return this;
 	}
 
-	setLastSong(last_song: string) {
-		this.last_song = last_song;
-		return this;
-	}
-
-	setLastSongPlayedAt(last_song_played_at: number) {
-		this.last_song_played_at = last_song_played_at;
+	setLastSong(last_song: SongModel) {
+		this.lastSong = last_song;
 		return this;
 	}
 
@@ -101,14 +97,19 @@ export class ChannelBuilder extends ChannelModel {
 		return this;
 	}
 
+	setQueue(queue: SongModel[]) {
+		this.queue = queue;
+		return this;
+	}
+
 	build() {
 		return new ChannelModel(
 			this.id,
 			this.name,
 			this.owner,
-			this.last_song,
-			this.last_song_played_at,
-			this.messages
+			this.lastSong,
+			this.messages,
+			this.queue,
 		)
 	}
 }

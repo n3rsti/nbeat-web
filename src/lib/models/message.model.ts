@@ -1,16 +1,18 @@
-import { SongBuilder, SongModel } from "./song.model";
+import { SongBuilder, type SongModel } from "./song.model";
 
 export class MessageModel {
 	private _id: string;
 	private _content: string;
 	private _author: string;
 	private _type: string;
+	private _song: SongModel;
 
-	constructor(id: string, content: string, author: string, type: string) {
+	constructor(id: string, content: string, author: string, type: string, song: SongModel) {
 		this._id = id;
 		this._content = content;
 		this._author = author;
 		this._type = type;
+		this._song = song;
 	}
 
 	get id() {
@@ -61,10 +63,10 @@ export class MessageModel {
 		}
 	}
 
-	get formattedSongMessage(): SongModel {
-		const song = SongBuilder.buildFromJsonContent(this.content)
-		return song
+	get song() {
+		return this._song;
 	}
+
 
 	set id(id: string) {
 		this._id = id;
@@ -82,12 +84,16 @@ export class MessageModel {
 		this._type = type;
 	}
 
+	set song(song: SongModel) {
+		this._song = song;
+	}
+
 
 }
 
 export class MessageBuilder extends MessageModel {
 	constructor() {
-		super('', '', '', '');
+		super('', '', '', '', new SongBuilder());
 	}
 
 	setId(id: string) {
@@ -109,8 +115,12 @@ export class MessageBuilder extends MessageModel {
 		this.type = type;
 		return this;
 	}
+	setSong(song: SongModel) {
+		this.song = song;
+		return this;
+	}
 
 	build() {
-		return new MessageModel(this.id, this.content, this.author, this.type);
+		return new MessageModel(this.id, this.content, this.author, this.type, this.song);
 	}
 }

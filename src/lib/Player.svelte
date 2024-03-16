@@ -51,7 +51,7 @@
 		if (player && player.getCurrentTime && player.getPlayerState() === YT.PlayerState.PLAYING) {
 			elapsed = Math.ceil(player.getCurrentTime());
 		} else if (player && player.getPlayerState() === YT.PlayerState.ENDED) {
-			elapsed = currentSong.durationSeconds;
+			elapsed = currentSong.duration;
 		}
 
 		formattedElapsed = formatSongDuration(elapsed);
@@ -97,7 +97,8 @@
 	}
 
 	export function playSong(song: SongModel, startSeconds: number = 0) {
-		playSongById(song.id, startSeconds);
+		console.log(song);
+		playSongById(song.songId, startSeconds);
 		currentSong = song;
 	}
 
@@ -152,7 +153,7 @@
 				<input
 					type="range"
 					min="0"
-					max={currentSong.durationSeconds}
+					max={currentSong.duration}
 					step="1"
 					bind:value={elapsed}
 					class="w-1/3 bg-blue-200"

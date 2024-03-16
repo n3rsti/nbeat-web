@@ -26,27 +26,51 @@
 	async function addMessage(message: MessageModel) {
 		channel.messages = [...channel.messages, message];
 
+		console.log(channel.messages);
 		scrollDown();
 	}
 
 	async function handleNewMessage(data: any) {
 		const content = data.content;
 		const author = data.author;
-		const id = data._id;
+		const id = data.id;
 		const type = data.type;
+		const songData = data.content;
+		let song = new SongBuilder().build();
+
+		if (type === 'song') {
+			song = new SongBuilder()
+				.setId(songData.id)
+				.setSongId(songData.song_id)
+				.setDuration(songData.duration)
+				.setName(songData.title)
+				.setThumbnail(songData.thumbnail)
+				.setStartTime(songData.song_start_time)
+				.build();
+		}
 
 		const message = new MessageBuilder()
 			.setId(id)
 			.setAuthor(author)
 			.setContent(content)
 			.setType(type)
+			.setSong(song)
 			.build();
 
 		addMessage(message);
 	}
 
 	function handleNewSong(data: any) {
-		const song = SongBuilder.buildFromJsonContent(data.content);
+		const songData = data.content;
+
+		const song = new SongBuilder()
+			.setId(songData.id)
+			.setSongId(songData.song_id)
+			.setDuration(songData.duration)
+			.setName(songData.title)
+			.setThumbnail(songData.thumbnail)
+			.setStartTime(songData.song_start_time)
+			.build();
 
 		player.playSong(song);
 	}
@@ -63,7 +87,9 @@
 			}
 		};
 		ws.onmessage = (event) => {
+			console.log(event.data);
 			const data = JSON.parse(event.data);
+			console.log(data);
 
 			if (data.type === 'song') {
 				handleNewSong(data);
@@ -86,11 +112,9 @@
 
 				scrollDown();
 
-				const secondsElapsed = (Date.now() - channel.last_song_played_at) / 1000;
+				const secondsElapsed = (Date.now() - channel.lastSong.startTime) / 1000;
 
-				API.getSongData(channel.last_song).then((song: SongModel) => {
-					player.playSong(song, secondsElapsed);
-				});
+				player.playSong(channel.lastSong, secondsElapsed);
 			})
 			.catch((err) => {
 				console.log(err);
@@ -220,16 +244,12 @@
 							</div>
 							<div class="flex gap-3 items-center">
 								<span class="text-gray-700"> Now playing </span>
-								<img
-									src={message.formattedSongMessage.thumbnail}
-									class="w-6 h-6 object-cover rounded-lg"
-									alt=""
-								/>
+								<img src={message.song.thumbnail} class="w-6 h-6 object-cover rounded-lg" alt="" />
 								<span class="font-semibold">
-									{message.formattedSongMessage.name}
+									{message.song.name}
 								</span>
 								<span class="text-xs text-gray-500">
-									({message.formattedSongMessage.readableDuration})
+									({message.song.readableDuration})
 								</span>
 							</div>
 						</div>

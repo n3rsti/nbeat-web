@@ -1,14 +1,18 @@
 export class SongModel {
 	private _id: string;
+	private _songId: string;
 	private _name: string;
 	private _thumbnail: string;
-	private _duration: string;
+	private _duration: number;
+	private _startTime: number;
 
-	constructor(id: string, name: string, thumbnail: string, duration: string) {
+	constructor(id: string, name: string, thumbnail: string, duration: number, songId: string, startTime: number) {
 		this._id = id;
+		this._songId = songId;
 		this._name = name;
 		this._thumbnail = thumbnail;
 		this._duration = duration;
+		this._startTime = startTime;
 	}
 
 	get id(): string {
@@ -35,60 +39,59 @@ export class SongModel {
 		this._thumbnail = value;
 	}
 
-	get duration(): string {
+	get duration(): number {
 		return this._duration;
 	}
 
-	get formattedDuration() {
-		const regex = /P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/;
-		const matches = this.duration.match(regex);
-
-		return {
-			years: matches && matches[1] ? parseInt(matches[1], 10) : 0,
-			months: matches && matches[2] ? parseInt(matches[2], 10) : 0,
-			days: matches && matches[3] ? parseInt(matches[3], 10) : 0,
-			hours: matches && matches[4] ? parseInt(matches[4], 10) : 0,
-			minutes: matches && matches[5] ? parseInt(matches[5], 10) : 0,
-			seconds: matches && matches[6] ? parseInt(matches[6], 10) : 0,
-		};
+	set duration(value: number) {
+		this._duration = value;
 	}
 
-	get durationSeconds() {
-		const formattedDuration = this.formattedDuration;
-		return formattedDuration.hours * 60 * 60 + formattedDuration.minutes * 60 + formattedDuration.seconds;
+	get songId(): string {
+		return this._songId;
+	}
+
+	set songId(songId: string) {
+		this._songId = songId;
+	}
+
+	get startTime() {
+		return this._startTime;
+	}
+
+	set startTime(startTime: number) {
+		this._startTime = startTime;
 	}
 
 	get readableDuration() {
-		const formattedDuration = this.formattedDuration;
+		const seconds = this.duration;
 
-		const hours = formattedDuration.hours;
-		const minutes = formattedDuration.minutes;
-		const seconds = formattedDuration.seconds;
+		const hours: number = Math.floor(seconds / 3600);
+		const minutes: number = Math.floor((seconds % 3600) / 60);
+		const remainingSeconds: number = seconds % 60;
 
-
+		const paddedHours = hours.toString().padStart(2, '0');
 		const paddedMinutes = minutes.toString().padStart(2, '0');
-		const paddedSeconds = Math.ceil(seconds).toString().padStart(2, '0');
+		const paddedSeconds = remainingSeconds.toString().padStart(2, '0');
 
-		if (hours === 0) {
-			return `${paddedMinutes}:${paddedSeconds}`
-		}
-
-		return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+		return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;
 	}
 
-	set duration(value: string) {
-		this._duration = value;
-	}
 }
 
 
 export class SongBuilder extends SongModel {
 	constructor() {
-		super('', '', '', '');
+		super('', '', '', 0, '', 0);
 	}
 
 	setId(id: string) {
 		this.id = id;
+		return this;
+	}
+
+	setSongId(id: string) {
+		this.songId = id;
 		return this;
 	}
 
@@ -102,25 +105,17 @@ export class SongBuilder extends SongModel {
 		return this;
 	}
 
-	setDuration(duration: string) {
+	setDuration(duration: number) {
 		this.duration = duration;
 		return this;
 	}
 
-	build(): SongModel {
-		return new SongModel(this.id, this.name, this.thumbnail, this.duration);
+	setStartTime(startTime: number) {
+		this.startTime = startTime;
+		return this;
 	}
 
-	static buildFromJsonContent(content) {
-		const parsedContent = JSON.parse(content).items[0];
-
-		const song = new SongBuilder()
-			.setId(parsedContent.id)
-			.setName(parsedContent.snippet.title)
-			.setThumbnail(parsedContent.snippet.thumbnails.default.url)
-			.setDuration(parsedContent.contentDetails.duration)
-			.build();
-
-		return song;
+	build(): SongModel {
+		return new SongModel(this.id, this.name, this.thumbnail, this.duration, this.songId, this.startTime);
 	}
 }

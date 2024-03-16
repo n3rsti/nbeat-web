@@ -84,23 +84,48 @@ export const API = {
 		if (response.status === 200) {
 			const data = await response.json();
 
+			console.log(data);
+			const lastSong = data.channel.lastPlayedSong;
+
 			const channel = new ChannelBuilder()
-				.setId(data._id)
-				.setName(data.name)
-				.setOwner(data.owner)
-				.setLastSong(data.last_song)
-				.setLastSongPlayedAt(data.last_song_played_at)
+				.setId(data.channel._id)
+				.setName(data.channel.name)
+				.setOwner(data.channel.owner)
+				.setLastSong(
+					new SongBuilder()
+						.setId(lastSong.id)
+						.setSongId(lastSong.song_id)
+						.setDuration(lastSong.duration)
+						.setName(lastSong.title)
+						.setThumbnail(lastSong.thumbnail)
+						.setStartTime(lastSong.song_start_time)
+						.build()
+				)
 				.setMessages(
-					data.messages.map((message) => {
+					data.channel.messages.map((message) => {
 						return new MessageBuilder()
-							.setId(message._id)
+							.setId(message.id)
 							.setAuthor(message.author)
 							.setContent(message.content)
 							.setType(message.type)
 							.build();
 					})
 				)
+				.setQueue(
+					data.queue.songs.map((song) => {
+						return new SongBuilder()
+							.setId(song.id)
+							.setSongId(song.song_id)
+							.setDuration(song.duration)
+							.setName(song.title)
+							.setThumbnail(song.thumbnail)
+							.setStartTime(song.song_start_time)
+							.build()
+					})
+				)
 				.build()
+
+			console.log(channel)
 
 			return channel
 		}
