@@ -103,12 +103,32 @@ export const API = {
 				)
 				.setMessages(
 					data.channel.messages.map((message) => {
-						return new MessageBuilder()
-							.setId(message.id)
+						let newMessage = new MessageBuilder()
+						newMessage.setId(message.id)
 							.setAuthor(message.author)
 							.setContent(message.content)
 							.setType(message.type)
-							.build();
+
+						if (newMessage.type === "song") {
+							let songDetails = message.songDetails;
+							if (songDetails.length > 0) {
+								songDetails = songDetails[0];
+
+								newMessage = newMessage.setSong(
+									new SongBuilder()
+										.setId(songDetails.id)
+										.setSongId(songDetails.song_id)
+										.setDuration(songDetails.duration)
+										.setName(songDetails.title)
+										.setThumbnail(songDetails.thumbnail)
+										.setStartTime(songDetails.song_start_time)
+										.build()
+								)
+							}
+
+						}
+
+						return newMessage.build()
 					})
 				)
 				.setQueue(

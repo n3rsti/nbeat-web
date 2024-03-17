@@ -72,7 +72,7 @@
 			.setStartTime(songData.song_start_time)
 			.build();
 
-		player.playSong(song);
+		player.addToQueue(song);
 	}
 
 	function handleWebsocketConnection(id: string) {
@@ -114,7 +114,9 @@
 
 				const secondsElapsed = (Date.now() - channel.lastSong.startTime) / 1000;
 
+				console.log('c', channel.lastSong);
 				player.playSong(channel.lastSong, secondsElapsed);
+				player.addToQueue(...channel.queue);
 			})
 			.catch((err) => {
 				console.log(err);
