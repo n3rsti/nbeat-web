@@ -18,8 +18,6 @@
 
 	let queue: SongModel[] = [];
 
-	$: console.log('QUEUE', queue);
-
 	onDestroy(() => {
 		if (player && player.destroy) {
 			player.destroy();
@@ -139,8 +137,8 @@
 	<script src="https://www.youtube.com/iframe_api"></script>
 </svelte:head>
 
-<div class="flex flex-col md:flex-row">
-	<div class="grid gap-4 px-8 my-8 w-full md:w-[700px]">
+<div class="grid grid-cols-1 md:grid-cols-2">
+	<div class="grid gap-4 px-8 my-8 w-full">
 		<div class="grid gap-2">
 			<div class="flex items-center gap-4">
 				<img
@@ -152,10 +150,12 @@
 					style="aspect-ratio: 100 / 100; object-fit: cover;"
 				/>
 				<div class="grid gap-1.5">
-					<h2 class="text-xl font-semibold overflow-hidden overflow-ellipsis whitespace-nowrap">
+					<h2
+						class="text-xl font-semibold overflow-hidden overflow-ellipsis whitespace-nowrap"
+						title={currentSong.name}
+					>
 						{currentSong.name}
 					</h2>
-					<!-- 				<p class="text-sm text-gray-500 dark:text-gray-400">{songDescription}</p> -->
 				</div>
 			</div>
 		</div>
@@ -198,9 +198,9 @@
 			</div>
 		</div>
 	</div>
-	<div class="w-full md:w-[600px] max-w-3xl p-4 border rounded-lg flex flex-col gap-4">
+	<div class="p-4 border rounded-lg flex flex-col gap-4">
 		<div class="flex items-center gap-4">
-			<div class="flex items-center gap-2 w-full">
+			<div class="grid grid-cols-queue gap-2 w-full items-center">
 				<div class="bg-gray-100 rounded-lg p-1 min-w-[64px]">
 					<img
 						src={currentSong.thumbnail}
@@ -211,18 +211,21 @@
 						style="aspect-ratio: 64 / 64; object-fit: cover;"
 					/>
 				</div>
-				<div class="flex flex-col max-w-[60%]">
-					<h3 class="text-sm font-bold text-blue-600 overflow-hidden whitespace-nowrap">
+				<div class="flex flex-col">
+					<h3
+						class="text-sm font-bold text-blue-600 overflow-hidden whitespace-nowrap overflow-ellipsis"
+						title={currentSong.name}
+					>
 						{currentSong.name}
 					</h3>
 				</div>
 
-				<p class="ml-auto text-sm text-gray-500">{currentSong.readableDuration}</p>
+				<p class="ml-auto text-sm text-gray-500 px-4">{currentSong.readableDuration}</p>
 			</div>
 		</div>
-		<div class="grid grid-cols-1 gap-2 w-full">
+		<div class="grid grid-cols-1 gap-2 w-full overflow-y-auto max-h-[150px] custom-scrollbar">
 			{#each queue as song}
-				<div class="grid grid-cols-[4fr_1fr] items-center justify-between gap-2">
+				<div class="grid grid-cols-queue items-center gap-4">
 					<div class="flex items-center gap-2">
 						<img
 							src={song.thumbnail}
@@ -232,13 +235,16 @@
 							alt="Album cover"
 							style="aspect-ratio: 32 / 32; object-fit: cover;"
 						/>
-						<div class="flex flex-col">
-							<h3 class="text-sm font-bold whitespace-nowrap overflow-hidden overflow-ellipsis">
-								{song.name}
-							</h3>
-						</div>
 					</div>
-					<p class="ml-auto text-sm text-gray-500">{song.readableDuration}</p>
+					<div class="flex flex-col">
+						<h3
+							class="text-sm font-semibold whitespace-nowrap overflow-hidden overflow-ellipsis"
+							title={song.name}
+						>
+							{song.name}
+						</h3>
+					</div>
+					<p class="ml-auto text-sm text-gray-500 px-4">{song.readableDuration}</p>
 				</div>
 			{/each}
 			<div class="flex items-center justify-between gap-2">

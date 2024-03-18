@@ -114,7 +114,7 @@
 
 				const secondsElapsed = (Date.now() - channel.lastSong.startTime) / 1000;
 
-				console.log('c', channel.lastSong);
+				console.log('c', channel);
 				player.playSong(channel.lastSong, secondsElapsed);
 				player.addToQueue(...channel.queue);
 			})
@@ -215,7 +215,7 @@
 
 	<Player bind:this={player} />
 	<h2 class="px-8 mb-4 text-xl font-semibold">Chat</h2>
-	<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-auto mb-16">
+	<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-auto custom-scrollbar">
 		<div class="flex flex-col gap-4">
 			{#each channel.messages as message}
 				<div class="flex items-start gap-2">
@@ -244,43 +244,47 @@
 							<div class="text-xs text-gray-500 dark:text-gray-400">
 								{message.humanReadableTimestamp}
 							</div>
-							<div class="flex gap-3 items-center">
-								<span class="text-gray-700"> Now playing </span>
-								<img src={message.song.thumbnail} class="w-6 h-6 object-cover rounded-lg" alt="" />
-								<span class="font-semibold">
-									{message.song.name}
-								</span>
-								<span class="text-xs text-gray-500">
-									({message.song.readableDuration})
-								</span>
+							<div class="flex gap-3 items-center flex-wrap">
+								<span class="text-gray-700">Added to queue</span>
+								<div class="flex gap-4">
+									<img
+										src={message.song.thumbnail}
+										class="w-6 h-6 object-cover rounded-lg"
+										alt=""
+									/>
+									<span class="font-semibold">
+										{message.song.name}
+										<span class="text-xs text-gray-500">
+											({message.song.readableDuration})
+										</span>
+									</span>
+								</div>
 							</div>
 						</div>
 					{/if}
 				</div>
 			{/each}
 		</div>
-		{#if authorized}
-			<div
-				class="fixed left-0 bottom-0 w-screen h-20 flex items-center justify-center bg-white px-16"
-			>
-				<form action="" on:submit={sendMessage} class="w-full flex items-center justify-center">
-					<label
-						class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"
-						for="message"
-					>
-						Message
-					</label>
-
-					<input
-						type="text"
-						id="default-input"
-						class="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:text-black w-full"
-						placeholder="Type your message..."
-						bind:value={message}
-						autocomplete="off"
-					/>
-				</form>
-			</div>
-		{/if}
 	</div>
+	{#if authorized}
+		<div class="w-full flex items-center justify-center bg-white mt-4">
+			<form action="" on:submit={sendMessage} class="w-full flex items-center justify-center">
+				<label
+					class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"
+					for="message"
+				>
+					Message
+				</label>
+
+				<input
+					type="text"
+					id="default-input"
+					class="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:text-black w-full"
+					placeholder="Type your message..."
+					bind:value={message}
+					autocomplete="off"
+				/>
+			</form>
+		</div>
+	{/if}
 </div>
