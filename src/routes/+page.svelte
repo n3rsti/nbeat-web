@@ -4,7 +4,11 @@
 	import { API } from '$lib/data';
 	import type { ChannelModel } from '$lib/models/channel.model';
 	import { onMount } from 'svelte';
-	import { pageTitle } from '../stores';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import Button from '$lib/components/ui/button/button.svelte';
 
 	let channelName = '';
 
@@ -21,7 +25,6 @@
 	}
 
 	onMount(async () => {
-		pageTitle.set('Home');
 		await API.getUserFollowedChannels('n3rstix').then((data: ChannelModel[]) => {
 			followedChannels = data;
 		});
@@ -29,19 +32,43 @@
 </script>
 
 <Nav />
-<!-- <form action="" on:submit={createChannel}> -->
-<!-- 	<input type="text" bind:value={channelName} /> -->
-<!-- 	<button>Create</button> -->
-<!-- </form> -->
-
 <div class="w-full p-8 md:px-16">
 	<div class="flex mb-10 items-center justify-between">
 		<h1 class="text-3xl font-bold tracking-tighter sm:text-4xl">Followed Channels</h1>
-		<button
-			class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-white hover:bg-zinc-900/90 h-11 rounded-md px-8"
-		>
-			Create Channel
-		</button>
+
+		<Dialog.Root>
+			<Dialog.Trigger>
+				<button
+					class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-white hover:bg-zinc-900/90 h-11 rounded-md px-8"
+				>
+					Create Channel
+				</button>
+			</Dialog.Trigger>
+			<Dialog.Content>
+				<Dialog.Header>
+					<Dialog.Title>Create a new channel</Dialog.Title>
+					<Dialog.Description>
+						This action will create a new music channel for you.
+					</Dialog.Description>
+				</Dialog.Header>
+
+				<form action="" on:submit={createChannel}>
+					<Label for="name">Channel name</Label>
+					<Input
+						name="name"
+						class="mt-2 mb-3"
+						placeholder="Enter channel name."
+						bind:value={channelName}
+					/>
+
+					<Label for="name">Description</Label>
+					<Textarea placeholder="Enter short description." class="mt-2 mb-2" rows={3} />
+					<div class="flex justify-end">
+						<Button class="ml-auto px-5" type="submit">Create</Button>
+					</div>
+				</form>
+			</Dialog.Content>
+		</Dialog.Root>
 	</div>
 
 	<div class="grid grid-cols-4 gap-4">

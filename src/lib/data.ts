@@ -1,8 +1,10 @@
 import { goto } from "$app/navigation";
+import { get } from "svelte/store";
 import { ChannelBuilder, ChannelModel } from "./models/channel.model";
 import { MessageBuilder } from "./models/message.model";
 import { SongBuilder, SongModel } from "./models/song.model";
 import { UserBuilder } from "./models/user.model";
+import { createPersistentStore } from "../stores";
 
 const ENDPOINT = "http://localhost:8080/api"
 
@@ -17,7 +19,8 @@ function formatResponseError(func: CallableFunction, response: Response) {
 }
 
 async function fetchAuthenticated(url: string, options?: RequestInit): Promise<Response> {
-	const token = localStorage.getItem("accessToken");
+	const accessTokenStore = createPersistentStore('accessToken', '');
+	const token = get(accessTokenStore);
 
 	if (token) {
 		if (!options) {
@@ -31,6 +34,8 @@ async function fetchAuthenticated(url: string, options?: RequestInit): Promise<R
 
 	const request = await fetch(url, options);
 	if (request.status === 401) {
+		accessTokenStore.set('')
+		localStorage.removeItem('accessToken');
 		goto("/login")
 	}
 
@@ -97,16 +102,6 @@ export const API = {
 				.setId(data.channel._id)
 				.setName(data.channel.name)
 				.setOwner(data.channel.owner)
-				.setLastSong(
-					new SongBuilder()
-						.setId(lastSong.id)
-						.setSongId(lastSong.song_id)
-						.setDuration(lastSong.duration)
-						.setName(lastSong.title)
-						.setThumbnail(lastSong.thumbnail)
-						.setStartTime(lastSong.song_start_time)
-						.build()
-				)
 				.setMessages(
 					data.channel.messages.map((message) => {
 						let newMessage = new MessageBuilder()
@@ -149,9 +144,21 @@ export const API = {
 							.build()
 					})
 				)
-				.build()
+			if (lastSong) {
+				channel.setLastSong(
+					new SongBuilder()
+						.setId(lastSong.id)
+						.setSongId(lastSong.song_id)
+						.setDuration(lastSong.duration)
+						.setName(lastSong.title)
+						.setThumbnail(lastSong.thumbnail)
+						.setStartTime(lastSong.song_start_time)
+						.build()
+				)
+			}
 
-			return channel
+
+			return channel.build();
 		}
 
 		throw formatResponseError(this.getChannel, response);

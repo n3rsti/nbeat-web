@@ -13,6 +13,4 @@ function createPersistentStore(key: string, startValue: string): Writable<string
 	return store;
 }
 
-const pageTitle = writable('');
-
-export { createPersistentStore, pageTitle };
+export { createPersistentStore };

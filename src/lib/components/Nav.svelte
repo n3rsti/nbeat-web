@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createPersistentStore, pageTitle } from '../../stores';
+	import { createPersistentStore } from '../../stores';
 	import { type Writable } from 'svelte/store';
 	import { goto } from '$app/navigation';
 	import { decodeJwt } from '$lib/jwt';

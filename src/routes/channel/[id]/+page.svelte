@@ -7,9 +7,9 @@
 	import { MessageBuilder, type MessageModel } from '$lib/models/message.model';
 	import { SongBuilder } from '$lib/models/song.model';
 	import { onMount, tick } from 'svelte';
-	import { createPersistentStore, pageTitle } from '../../../stores';
+	import { createPersistentStore } from '../../../stores';
 	import { decodeJwt } from '$lib/jwt';
-	import { get } from 'svelte/store';
+	import { Button } from '$lib/components/ui/button';
 
 	let ws: WebSocket;
 	let channelId = $page.params.id;
@@ -109,8 +109,6 @@
 			const data: ChannelModel = await API.getChannel(channelId);
 			channel = data;
 
-			pageTitle.set(channel.name);
-
 			await API.getUserFollowedChannelIds(user)
 				.then((data: string[]) => {
 					subscribed = data.includes(channelId);
@@ -166,42 +164,15 @@
 	<div class="p-8 flex flex-col flex-1 overflow-auto">
 		<header class="flex justify-between items-center px-8 mb-4">
 			<div class="flex items-center gap-4">
-				<!-- <img
-					src="/placeholder.svg"
-					width="80"
-					height="80"
-					alt="Channel logo"
-					class="rounded-full aspect-square object-cover border"
-				/> -->
 				<div class="flex gap-4">
 					<h1 class="text-2xl font-bold">{channel.name}</h1>
 					{#if authorized && channel.owner != user && subscribed === false}
-						<button
-							on:click={subscribe}
-							class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-white hover:bg-zinc-900/90 h-10 rounded-md px-4 py-2"
-						>
-							Subscribe
-						</button>
+						<Button on:click={subscribe}>Subscribe</Button>
 					{:else if subscribed}
-						<button
-							class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-gray-100 h-10 px-4 py-2 bg-gray-50"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								class="h-4 w-4"
-							>
-								<polyline points="20 6 9 17 4 12"></polyline>
-							</svg>
-							<span class="ml-2"> Subscribed </span>
-						</button>
+						<Button variant="outline">
+							<span class="material-symbols-outlined text-primary text-base mr-2"> done </span>
+							Subscribed
+						</Button>
 					{/if}
 				</div>
 			</div>

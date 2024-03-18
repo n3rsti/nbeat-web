@@ -35,8 +35,13 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"bits-ui": "^0.19.7",
+		"clsx": "^2.1.0",
 		"jsonwebtoken": "^9.0.2",
+		"lucide-svelte": "^0.359.0",
 		"svelte-persisted-store": "^0.9.1",
+		"tailwind-merge": "^2.2.2",
+		"tailwind-variants": "^0.2.1",
 		"youtube-iframe": "^1.0.3",
 		"youtube-player": "^5.6.0"
 	}

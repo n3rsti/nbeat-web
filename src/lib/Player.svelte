@@ -125,10 +125,11 @@
 			player.mute();
 		}
 
-		muted = player.isMuted();
+		muted = !muted;
 	}
 
 	export function setVolume() {
+		console.log(volume);
 		if (player) {
 			player.setVolume(volume);
 			if (muted) {
