@@ -6,7 +6,6 @@ function createPersistentStore(key: string, startValue: string): Writable<string
 
 	const store: Writable<string> = writable(initialValue);
 
-	// Subscribe to the store's changes and update localStorage accordingly
 	store.subscribe((value: string) => {
 		localStorage.setItem(key, value);
 	});
@@ -14,4 +13,6 @@ function createPersistentStore(key: string, startValue: string): Writable<string
 	return store;
 }
 
-export { createPersistentStore };
+const pageTitle = writable('');
+
+export { createPersistentStore, pageTitle };

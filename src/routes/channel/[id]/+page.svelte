@@ -7,12 +7,13 @@
 	import { MessageBuilder, type MessageModel } from '$lib/models/message.model';
 	import { SongBuilder } from '$lib/models/song.model';
 	import { onMount, tick } from 'svelte';
-	import { createPersistentStore } from '../../../stores';
+	import { createPersistentStore, pageTitle } from '../../../stores';
 	import { decodeJwt } from '$lib/jwt';
+	import { get } from 'svelte/store';
 
 	let ws: WebSocket;
-	let id = $page.params.id;
-	const wsUrl = `ws://localhost:8080/ws/channel/${id}`;
+	let channelId = $page.params.id;
+	const wsUrl = `ws://localhost:8080/ws/channel/${channelId}`;
 
 	const tokenStore = createPersistentStore('accessToken', '');
 	let token = '';
@@ -105,8 +106,18 @@
 
 	onMount(async () => {
 		try {
-			const data: ChannelModel = await API.getChannel(id);
+			const data: ChannelModel = await API.getChannel(channelId);
 			channel = data;
+
+			pageTitle.set(channel.name);
+
+			await API.getUserFollowedChannelIds(user)
+				.then((data: string[]) => {
+					subscribed = data.includes(channelId);
+				})
+				.catch((error: Error) => {
+					console.error(error);
+				});
 
 			scrollDown();
 
@@ -149,58 +160,60 @@
 // v0 by Vercel.
 // https://v0.dev/t/sk10Pyu7PnP
 -->
-<div class="p-8 h-screen flex flex-col">
-	<header class="flex justify-between items-center px-8 mb-4">
-		<div class="flex items-center gap-4">
-			<!-- <img
+
+<div class="h-screen flex flex-col">
+	<Nav />
+	<div class="p-8 flex flex-col flex-1 overflow-auto">
+		<header class="flex justify-between items-center px-8 mb-4">
+			<div class="flex items-center gap-4">
+				<!-- <img
 					src="/placeholder.svg"
 					width="80"
 					height="80"
 					alt="Channel logo"
 					class="rounded-full aspect-square object-cover border"
 				/> -->
-			<div class="flex gap-4">
-				<h1 class="text-2xl font-bold">{channel.name}</h1>
-				{#if authorized && channel.owner != user && subscribed === false}
-					<button
-						on:click={subscribe}
-						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-10 rounded-md px-4 py-2"
-					>
-						Subscribe
-					</button>
-				{:else if subscribed}
-					<button
-						class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-gray-100 h-10 px-4 py-2 bg-gray-50"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							class="h-4 w-4"
+				<div class="flex gap-4">
+					<h1 class="text-2xl font-bold">{channel.name}</h1>
+					{#if authorized && channel.owner != user && subscribed === false}
+						<button
+							on:click={subscribe}
+							class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-white hover:bg-zinc-900/90 h-10 rounded-md px-4 py-2"
 						>
-							<polyline points="20 6 9 17 4 12"></polyline>
-						</svg>
-						<span class="ml-2"> Subscribed </span>
-					</button>
-				{/if}
+							Subscribe
+						</button>
+					{:else if subscribed}
+						<button
+							class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-gray-100 h-10 px-4 py-2 bg-gray-50"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								class="h-4 w-4"
+							>
+								<polyline points="20 6 9 17 4 12"></polyline>
+							</svg>
+							<span class="ml-2"> Subscribed </span>
+						</button>
+					{/if}
+				</div>
 			</div>
-		</div>
-		<Nav />
-	</header>
+		</header>
 
-	<Player bind:this={player} />
-	<h2 class="px-8 mb-4 text-xl font-semibold">Chat</h2>
-	<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-auto custom-scrollbar">
-		<div class="flex flex-col gap-4">
-			{#each channel.messages as message}
-				<div class="flex items-start gap-2">
-					<!-- <img
+		<Player bind:this={player} />
+		<h2 class="px-8 mb-4 text-xl font-semibold">Chat</h2>
+		<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-auto custom-scrollbar">
+			<div class="flex flex-col gap-4">
+				{#each channel.messages as message}
+					<div class="flex items-start gap-2">
+						<!-- <img
 								width="32"
 								height="32"
 								alt="Avatar"
@@ -208,64 +221,65 @@
 								style="aspect-ratio: 32 / 32; object-fit: cover;"
 							/> -->
 
-					{#if message.type === 'message'}
-						<div>
-							<div class="flex items-center gap-2">
-								<div class="font-semibold">{message.author}</div>
+						{#if message.type === 'message'}
+							<div>
+								<div class="flex items-center gap-2">
+									<div class="font-semibold">{message.author}</div>
+									<div class="text-xs text-gray-500 dark:text-gray-400">
+										{message.humanReadableTimestamp}
+									</div>
+								</div>
+								<p class="break-all">
+									{message.content}
+								</p>
+							</div>
+						{:else if message.type === 'song'}
+							<div>
 								<div class="text-xs text-gray-500 dark:text-gray-400">
 									{message.humanReadableTimestamp}
 								</div>
-							</div>
-							<p class="break-all">
-								{message.content}
-							</p>
-						</div>
-					{:else if message.type === 'song'}
-						<div>
-							<div class="text-xs text-gray-500 dark:text-gray-400">
-								{message.humanReadableTimestamp}
-							</div>
-							<div class="flex gap-3 items-center flex-wrap">
-								<span class="text-gray-700">Added to queue</span>
-								<div class="flex gap-4">
-									<img
-										src={message.song.thumbnail}
-										class="w-6 h-6 object-cover rounded-lg"
-										alt=""
-									/>
-									<span class="font-semibold">
-										{message.song.name}
-										<span class="text-xs text-gray-500">
-											({message.song.readableDuration})
+								<div class="flex gap-3 items-center flex-wrap">
+									<span class="text-gray-700">Added to queue</span>
+									<div class="flex gap-4">
+										<img
+											src={message.song.thumbnail}
+											class="w-6 h-6 object-cover rounded-lg"
+											alt=""
+										/>
+										<span class="font-semibold">
+											{message.song.name}
+											<span class="text-xs text-gray-500">
+												({message.song.readableDuration})
+											</span>
 										</span>
-									</span>
+									</div>
 								</div>
 							</div>
-						</div>
-					{/if}
-				</div>
-			{/each}
+						{/if}
+					</div>
+				{/each}
+			</div>
 		</div>
-	</div>
-	{#if authorized}
-		<div class="w-full flex items-center justify-center bg-white mt-4">
-			<form action="" on:submit={sendMessage} class="w-full flex items-center justify-center">
-				<label
-					class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"
-					for="message"
-				>
-					Message
-				</label>
+		{#if authorized}
+			<div class="w-full flex items-center justify-center bg-white mt-4">
+				<form action="" on:submit={sendMessage} class="w-full flex items-center justify-center">
+					<label
+						class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 sr-only"
+						for="message"
+					>
+						Message
+					</label>
 
-				<input
-					type="text"
-					id="default-input"
-					class="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:text-black w-full"
-					placeholder="Type your message..."
-					bind:value={message}
-					autocomplete="off"
-				/>
-			</form>
-		</div>
-	{/if}
+					<input
+						type="text"
+						id="default-input"
+						class="bg-gray-50 border-2 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 placeholder:text-black w-full"
+						placeholder="Type your message..."
+						bind:value={message}
+						autocomplete="off"
+					/>
+				</form>
+			</div>
+		{/if}
+	</div>
 </div>

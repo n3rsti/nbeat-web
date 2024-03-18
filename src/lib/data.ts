@@ -2,11 +2,18 @@ import { goto } from "$app/navigation";
 import { ChannelBuilder, ChannelModel } from "./models/channel.model";
 import { MessageBuilder } from "./models/message.model";
 import { SongBuilder, SongModel } from "./models/song.model";
+import { UserBuilder } from "./models/user.model";
 
 const ENDPOINT = "http://localhost:8080/api"
 
 const JSON_HEADERS = {
 	'Content-Type': 'application/json'
+}
+
+function formatResponseError(func: CallableFunction, response: Response) {
+	return new Error(`Function: ${func.name}\n
+	Status: ${response.status}, ${response.statusText}}\n
+	Body: ${response.body}`)
 }
 
 async function fetchAuthenticated(url: string, options?: RequestInit): Promise<Response> {
@@ -81,8 +88,10 @@ export const API = {
 
 		if (response.status === 200) {
 			const data = await response.json();
+			console.log(data)
 
 			const lastSong = data.channel.lastPlayedSong;
+			console.log(lastSong);
 
 			const channel = new ChannelBuilder()
 				.setId(data.channel._id)
@@ -145,7 +154,7 @@ export const API = {
 			return channel
 		}
 
-		throw new Error();
+		throw formatResponseError(this.getChannel, response);
 	},
 
 	async getSongData(id: string): Promise<SongModel> {
@@ -166,7 +175,7 @@ export const API = {
 
 		}
 
-		throw new Error();
+		throw formatResponseError(this.getSongData, response);
 	},
 
 	async subscribeToChannel(id: string) {
@@ -176,5 +185,50 @@ export const API = {
 		})
 
 		return response;
+	},
+
+	async getUserFollowedChannelIds(id: string) {
+		const response = await fetch(`${ENDPOINT}/user/${id}/followedChannelIds`);
+
+		if (response.status === 200) {
+			const data = await response.json();
+
+			return data.followedChannels || [];
+		}
+
+		throw formatResponseError(this.getUserFollowedChannelIds, response);
+	},
+
+	async getUserFollowedChannels(id: string) {
+		const response = await fetch(`${ENDPOINT}/user/${id}/followedChannels`);
+
+		if (response.status === 200) {
+			const data = await response.json();
+
+			interface Channel {
+				_id: string,
+				name: string,
+				owner: string,
+				lastPlayedSong: any,
+			}
+
+			const channels: ChannelModel[] = data.channels.map((channel: Channel) => {
+				const lastSong = channel.lastPlayedSong;
+				return new ChannelBuilder()
+					.setId(channel._id)
+					.setName(channel.name)
+					.setOwner(channel.owner)
+					.setLastSong(
+						new SongBuilder().setId(lastSong.id).setName(lastSong.title).setThumbnail(lastSong.thumbnail).build()
+					)
+					.build();
+			});
+
+			return channels || [];
+
+		}
+
+		throw formatResponseError(this.getUserFollowedChannels, response);
+
 	}
 }

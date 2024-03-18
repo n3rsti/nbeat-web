@@ -41,7 +41,11 @@
 	function updateElapsed() {
 		if (player && player.getCurrentTime && player.getPlayerState() === YT.PlayerState.PLAYING) {
 			elapsed = Math.ceil(player.getCurrentTime());
-		} else if (player && player.getPlayerState() === YT.PlayerState.ENDED) {
+		} else if (
+			player &&
+			player.getPlayerState &&
+			player.getPlayerState() === YT.PlayerState.ENDED
+		) {
 			elapsed = currentSong.duration;
 		}
 
