@@ -16,7 +16,7 @@
 	}
 </script>
 
-<nav class="flex items-center gap-4 w-screen overflow-hidden">
+<nav class="flex items-center gap-4 overflow-hidden">
 	<a href="/">Home</a>
 	{#if $accessTokenStore == ''}
 		<a

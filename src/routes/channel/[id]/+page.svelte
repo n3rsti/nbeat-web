@@ -5,40 +5,45 @@
 	import { API } from '$lib/data';
 	import { ChannelModel, ChannelBuilder } from '$lib/models/channel.model';
 	import { MessageBuilder, type MessageModel } from '$lib/models/message.model';
-	import { SongBuilder, SongModel } from '$lib/models/song.model';
+	import { SongBuilder } from '$lib/models/song.model';
 	import { onMount, tick } from 'svelte';
 	import { createPersistentStore } from '../../../stores';
-	import { get } from 'svelte/store';
+	import { decodeJwt } from '$lib/jwt';
 
 	let ws: WebSocket;
-
 	let id = $page.params.id;
-	let player: Player;
+	const wsUrl = `ws://localhost:8080/ws/channel/${id}`;
 
-	let message: string = '';
+	const tokenStore = createPersistentStore('accessToken', '');
+	let token = '';
+	let user = '';
+	let authorized = false;
 
 	let channel: ChannelModel = new ChannelBuilder();
+	let message: string = '';
+
+	let player: Player;
+
 	let chatElement: HTMLElement;
 
-	const token = createPersistentStore('accessToken', '');
-	let authorized = get(token) !== '';
+	tokenStore.subscribe((value) => {
+		token = value;
+		const decodedJwt = decodeJwt(token);
+		user = decodedJwt?.id || '';
+		authorized = token !== '';
+	});
 
 	async function addMessage(message: MessageModel) {
 		channel.messages = [...channel.messages, message];
-
-		console.log(channel.messages);
 		scrollDown();
 	}
 
 	async function handleNewMessage(data: any) {
-		const content = data.content;
-		const author = data.author;
-		const id = data.id;
-		const type = data.type;
-		const songData = data.content;
-		let song = new SongBuilder().build();
+		const { content, author, id, type } = data;
+		let song = null;
 
 		if (type === 'song') {
+			const songData = content;
 			song = new SongBuilder()
 				.setId(songData.id)
 				.setSongId(songData.song_id)
@@ -49,15 +54,15 @@
 				.build();
 		}
 
-		const message = new MessageBuilder()
+		const newMessage = new MessageBuilder()
 			.setId(id)
 			.setAuthor(author)
 			.setContent(content)
 			.setType(type)
-			.setSong(song)
+			.setSong(song || new SongBuilder().build())
 			.build();
 
-		addMessage(message);
+		addMessage(newMessage);
 	}
 
 	function handleNewSong(data: any) {
@@ -75,9 +80,7 @@
 		player.addToQueue(song);
 	}
 
-	function handleWebsocketConnection(id: string) {
-		const wsUrl = `ws://localhost:8080/ws/channel/${id}`;
-
+	function handleWebsocketConnection() {
 		ws = new WebSocket(wsUrl);
 
 		ws.onopen = () => {
@@ -87,9 +90,7 @@
 			}
 		};
 		ws.onmessage = (event) => {
-			console.log(event.data);
 			const data = JSON.parse(event.data);
-			console.log(data);
 
 			if (data.type === 'song') {
 				handleNewSong(data);
@@ -99,34 +100,27 @@
 		};
 		ws.onerror = (error) => console.error('WebSocket error:', error);
 		ws.onclose = () => console.log('WebSocket connection closed');
-
-		return () => {
-			ws.close();
-		};
 	}
 
-	onMount(() => {
-		API.getChannel(id)
-			.then((data: ChannelModel) => {
-				channel = data;
+	// Fetch channel details and initiate WebSocket connection on mount
+	onMount(async () => {
+		try {
+			const data: ChannelModel = await API.getChannel(id);
+			channel = data;
 
-				scrollDown();
+			scrollDown();
 
-				const secondsElapsed = (Date.now() - channel.lastSong.startTime) / 1000;
+			const secondsElapsed = (Date.now() - channel.lastSong.startTime) / 1000;
+			player.playSong(channel.lastSong, secondsElapsed);
+			player.addToQueue(...channel.queue);
 
-				console.log('c', channel);
-				player.playSong(channel.lastSong, secondsElapsed);
-				player.addToQueue(...channel.queue);
-			})
-			.catch((err) => {
-				console.log(err);
-			});
-
-		id = $page.params.id;
-
-		handleWebsocketConnection(id);
+			handleWebsocketConnection();
+		} catch (err) {
+			console.error(err);
+		}
 	});
 
+	// Scroll chat down when new message is added
 	async function scrollDown() {
 		if (chatElement) {
 			await tick();
@@ -134,6 +128,7 @@
 		}
 	}
 
+	// Send message over WebSocket
 	function sendMessage(event: SubmitEvent) {
 		event.preventDefault();
 		if (message) {
@@ -157,57 +152,15 @@
 					alt="Channel logo"
 					class="rounded-full aspect-square object-cover border"
 				/> -->
-			<div class="grid gap-1.5">
+			<div class="flex gap-4">
 				<h1 class="text-2xl font-bold">{channel.name}</h1>
-				<div class="flex items-center gap-2 text-sm">
+				{#if authorized && channel.owner != user}
 					<button
 						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-9 rounded-md px-3"
 					>
 						Subscribe
 					</button>
-					<button
-						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							class="w-4 h-4"
-						>
-							<path
-								d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-							></path>
-						</svg>
-						Like
-					</button>
-					<button
-						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="24"
-							height="24"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							class="w-4 h-4"
-						>
-							<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-							<polyline points="16 6 12 2 8 6"></polyline>
-							<line x1="12" x2="12" y1="2" y2="15"></line>
-						</svg>
-						Share
-					</button>
-				</div>
+				{/if}
 			</div>
 		</div>
 		<Nav />
@@ -235,7 +188,7 @@
 									{message.humanReadableTimestamp}
 								</div>
 							</div>
-							<p>
+							<p class="break-all">
 								{message.content}
 							</p>
 						</div>

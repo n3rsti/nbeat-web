@@ -84,7 +84,6 @@ export const API = {
 		if (response.status === 200) {
 			const data = await response.json();
 
-			console.log(data);
 			const lastSong = data.channel.lastPlayedSong;
 
 			const channel = new ChannelBuilder()
@@ -144,8 +143,6 @@ export const API = {
 					})
 				)
 				.build()
-
-			console.log(channel)
 
 			return channel
 		}

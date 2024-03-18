@@ -15,7 +15,6 @@
 	let formattedElapsed = '00:00';
 
 	let player: YT.Player;
-
 	let queue: SongModel[] = [];
 
 	onDestroy(() => {
@@ -32,18 +31,14 @@
 		const paddedMinutes = minutes.toString().padStart(2, '0');
 		const paddedSeconds = Math.ceil(remainingSeconds).toString().padStart(2, '0');
 
-		if (isNaN(hours)) {
-			return formatSongDuration(elapsed);
-		}
-
-		if (hours == 0) {
-			return `${paddedMinutes}:${paddedSeconds}`;
-		}
-
-		return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+		return hours > 0
+			? `${hours}:${paddedMinutes}:${paddedSeconds}`
+			: `${paddedMinutes}:${paddedSeconds}`;
 	}
 
-	setInterval(() => {
+	setInterval(updateElapsed, 1000);
+
+	function updateElapsed() {
 		if (player && player.getCurrentTime && player.getPlayerState() === YT.PlayerState.PLAYING) {
 			elapsed = Math.ceil(player.getCurrentTime());
 		} else if (player && player.getPlayerState() === YT.PlayerState.ENDED) {
@@ -51,51 +46,56 @@
 		}
 
 		formattedElapsed = formatSongDuration(elapsed);
-	}, 1000);
+	}
+
+	function onPlayerReady() {
+		if (currentSong) {
+			const ts = new Date().getTime();
+			const elapsed = (ts - currentSong.startTime) / 1000;
+			playSong(currentSong, elapsed);
+		}
+	}
+
+	function onPlayerStateChange(event) {
+		if (event.data === YT.PlayerState.ENDED) {
+			const song = queue.shift();
+			queue = queue;
+			if (song) {
+				const ts = new Date().getTime();
+				const elapsed = (ts - song.startTime) / 1000;
+				playSong(song, elapsed);
+			}
+		}
+	}
+
+	function loadYtPlayer() {
+		player = new YT.Player('player', {
+			height: '0',
+			width: '0',
+			videoId: '',
+			playerVars: {
+				autoplay: 1,
+				controls: 1,
+				mute: 1
+			},
+			events: {
+				onReady: onPlayerReady,
+				onStateChange: (event) => {
+					onPlayerStateChange(event);
+				}
+			}
+		});
+	}
 
 	onMount(() => {
-		function load() {
-			player = new YT.Player('player', {
-				height: '0',
-				width: '0',
-				videoId: '', // Replace with your video ID
-				playerVars: {
-					autoplay: 1,
-					controls: 1,
-					mute: 1
-				},
-				events: {
-					onReady: () => {
-						if (currentSong) {
-							const ts = new Date().getTime();
-							const elapsed = (ts - currentSong.startTime) / 1000;
-							playSong(currentSong, elapsed);
-						}
-					},
-					onStateChange: (event) => {
-						if (event.data === YT.PlayerState.ENDED) {
-							const song = queue.shift();
-							queue = queue;
-							if (song) {
-								const ts = new Date().getTime();
-								const elapsed = (ts - song.startTime) / 1000;
-								playSong(song, elapsed);
-							}
-						}
-					}
-				}
-			});
-		}
-
 		if (window.YT) {
-			load();
+			loadYtPlayer();
 		} else {
-			window.onYouTubeIframeAPIReady = load;
+			window.onYouTubeIframeAPIReady = loadYtPlayer;
 		}
 	});
 
 	export function playSong(song: SongModel, startSeconds: number = 0) {
-		console.log(song);
 		currentSong = song;
 
 		if (player && player.loadVideoById) {
@@ -117,17 +117,19 @@
 	export function toggleMute() {
 		if (player.isMuted()) {
 			player.unMute();
-			muted = false;
 		} else {
 			player.mute();
-			muted = true;
 		}
+
+		muted = player.isMuted();
 	}
 
 	export function setVolume() {
-		player.setVolume(volume);
-		if (player.isMuted()) {
-			toggleMute();
+		if (player) {
+			player.setVolume(volume);
+			if (muted) {
+				toggleMute();
+			}
 		}
 	}
 </script>
