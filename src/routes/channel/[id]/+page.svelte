@@ -18,6 +18,7 @@
 	let token = '';
 	let user = '';
 	let authorized = false;
+	let subscribed = false;
 
 	let channel: ChannelModel = new ChannelBuilder();
 	let message: string = '';
@@ -102,7 +103,6 @@
 		ws.onclose = () => console.log('WebSocket connection closed');
 	}
 
-	// Fetch channel details and initiate WebSocket connection on mount
 	onMount(async () => {
 		try {
 			const data: ChannelModel = await API.getChannel(id);
@@ -120,7 +120,6 @@
 		}
 	});
 
-	// Scroll chat down when new message is added
 	async function scrollDown() {
 		if (chatElement) {
 			await tick();
@@ -128,12 +127,20 @@
 		}
 	}
 
-	// Send message over WebSocket
 	function sendMessage(event: SubmitEvent) {
 		event.preventDefault();
 		if (message) {
 			ws.send(message);
 			message = '';
+		}
+	}
+
+	async function subscribe() {
+		subscribed = true;
+
+		const response = await API.subscribeToChannel(channel.id);
+		if (response.status !== 200) {
+			subscribed = false;
 		}
 	}
 </script>
@@ -154,11 +161,32 @@
 				/> -->
 			<div class="flex gap-4">
 				<h1 class="text-2xl font-bold">{channel.name}</h1>
-				{#if authorized && channel.owner != user}
+				{#if authorized && channel.owner != user && subscribed === false}
 					<button
-						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-9 rounded-md px-3"
+						on:click={subscribe}
+						class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-black text-white hover:bg-black/90 h-10 rounded-md px-4 py-2"
 					>
 						Subscribe
+					</button>
+				{:else if subscribed}
+					<button
+						class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-gray-100 h-10 px-4 py-2 bg-gray-50"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							class="h-4 w-4"
+						>
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+						<span class="ml-2"> Subscribed </span>
 					</button>
 				{/if}
 			</div>

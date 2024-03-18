@@ -5,6 +5,10 @@ import { SongBuilder, SongModel } from "./models/song.model";
 
 const ENDPOINT = "http://localhost:8080/api"
 
+const JSON_HEADERS = {
+	'Content-Type': 'application/json'
+}
+
 async function fetchAuthenticated(url: string, options?: RequestInit): Promise<Response> {
 	const token = localStorage.getItem("accessToken");
 
@@ -38,9 +42,7 @@ export const API = {
 		const response = await fetch(`${ENDPOINT}/login`, {
 			method: 'POST',
 			body: JSON.stringify(body),
-			headers: {
-				'Content-Type': 'application/json'
-			}
+			headers: JSON_HEADERS
 		});
 
 		return response
@@ -54,9 +56,7 @@ export const API = {
 		const response = await fetch(`${ENDPOINT}/register`, {
 			method: 'POST',
 			body: JSON.stringify(body),
-			headers: {
-				'Content-Type': 'application/json'
-			}
+			headers: JSON_HEADERS
 		});
 
 		return response
@@ -70,9 +70,7 @@ export const API = {
 		const response = await fetchAuthenticated(`${ENDPOINT}/channel`, {
 			method: 'POST',
 			body: JSON.stringify(body),
-			headers: {
-				'Content-Type': 'application/json'
-			}
+			headers: JSON_HEADERS
 		})
 
 		return response
@@ -169,5 +167,14 @@ export const API = {
 		}
 
 		throw new Error();
+	},
+
+	async subscribeToChannel(id: string) {
+		const response = await fetchAuthenticated(`${ENDPOINT}/channel/${id}/subscribe`, {
+			method: 'POST',
+			headers: JSON_HEADERS,
+		})
+
+		return response;
 	}
 }
