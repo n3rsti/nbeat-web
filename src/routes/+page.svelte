@@ -9,6 +9,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import { user } from '../stores';
 
 	let channelName = '';
 
@@ -24,11 +25,18 @@
 		}
 	}
 
-	onMount(async () => {
-		await API.getUserFollowedChannels('n3rstix').then((data: ChannelModel[]) => {
-			followedChannels = data;
-		});
-	});
+	$: {
+		if ($user) {
+			API.getUserFollowedChannels($user)
+				.then((data: ChannelModel[]) => {
+					followedChannels = data;
+					console.log(data);
+				})
+				.catch((err) => {
+					console.error(err);
+				});
+		}
+	}
 </script>
 
 <Nav />
@@ -71,45 +79,50 @@
 		</Dialog.Root>
 	</div>
 
-	<div class="grid grid-cols-4 gap-4">
+	<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
 		{#each followedChannels as channel}
 			<a
 				href="/channel/{channel.id}"
-				class="rounded-lg border bg-card text-card-foreground shadow-sm"
+				class="rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-gray-50 transition-colors duration-75"
 				data-v0-t="card"
 			>
-				<div class="p-4 hover:bg-gray-50 transition-colors duration-75">
-					<div class="grid gap-2">
+				<div class="p-4">
+					<div class="grid gap-2 w-full">
 						<div class="flex items-center gap-2">
 							<div class="flex flex-col">
 								<h3 class="font-semibold">{channel.name}</h3>
 							</div>
 						</div>
 						<div class="grid gap-2">
-							<div class="flex items-center gap-2">
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="24"
-									height="24"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									class="w-4 h-4 opacity-60"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
-								><span class="text-sm text-gray-900 font-semibold"> Now playing </span>
-							</div>
-							<div class="flex items-center gap-2">
-								<img
-									src={channel.lastSong.thumbnail}
-									class="w-6 h-6 object-cover rounded-lg"
-									alt=""
-								/>
-								<span class="text-sm text-gray-500">
-									{channel.lastSong.name}
-								</span>
-							</div>
+							{#if channel.lastSong.id}
+								<div class="flex items-center gap-2">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="24"
+										height="24"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										class="w-4 h-4 opacity-60"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
+									>
+									<span class="text-sm text-gray-900 font-semibold"> Now playing </span>
+								</div>
+								<div class="grid grid-cols-[auto_1fr] items-center gap-2 w-full">
+									<img
+										src={channel.lastSong.thumbnail}
+										class="w-6 h-6 object-cover rounded-lg"
+										alt=""
+									/>
+									<span
+										class="text-sm text-gray-500 whitespace-nowrap overflow-hidden overflow-ellipsis"
+									>
+										{channel.lastSong.name}
+									</span>
+								</div>
+							{/if}
 						</div>
 					</div>
 				</div>

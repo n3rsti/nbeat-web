@@ -13,4 +13,6 @@ function createPersistentStore(key: string, startValue: string): Writable<string
 	return store;
 }
 
-export { createPersistentStore };
+const user = writable('');
+
+export { createPersistentStore, user };

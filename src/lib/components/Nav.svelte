@@ -1,20 +1,10 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { createPersistentStore } from '../../stores';
 	import { type Writable } from 'svelte/store';
 	import { goto } from '$app/navigation';
-	import { decodeJwt } from '$lib/jwt';
+	import { Button } from '$lib/components/ui/button/index';
+	import { user } from '../../stores';
 
 	let accessTokenStore: Writable<string>;
-	let user = '';
-
-	onMount(() => {
-		accessTokenStore = createPersistentStore('accessToken', '');
-		accessTokenStore.subscribe((value) => {
-			const decodedJwt = decodeJwt(value);
-			user = decodedJwt?.id || '';
-		});
-	});
 
 	function logout() {
 		accessTokenStore.set('');
@@ -33,7 +23,10 @@
 		<div
 			class="flex items-center gap-2 text-sm font-medium rounded-md hover:underline focus-visible:outline-none dark:hover:underline"
 		>
-			{user}
+			{#if $user == ''}
+				<Button href="/login" class="mr-4">Login</Button>
+			{/if}
+			{$user}
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				width="24"

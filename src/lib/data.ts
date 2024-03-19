@@ -3,8 +3,9 @@ import { get } from "svelte/store";
 import { ChannelBuilder, ChannelModel } from "./models/channel.model";
 import { MessageBuilder } from "./models/message.model";
 import { SongBuilder, SongModel } from "./models/song.model";
-import { UserBuilder } from "./models/user.model";
 import { createPersistentStore } from "../stores";
+
+import songPlaceholder from '$lib/assets/song-placeholder.png';
 
 const ENDPOINT = "http://localhost:8080/api"
 
@@ -221,14 +222,24 @@ export const API = {
 
 			const channels: ChannelModel[] = data.channels.map((channel: Channel) => {
 				const lastSong = channel.lastPlayedSong;
-				return new ChannelBuilder()
+
+				const c = new ChannelBuilder()
 					.setId(channel._id)
 					.setName(channel.name)
 					.setOwner(channel.owner)
+
 					.setLastSong(
-						new SongBuilder().setId(lastSong.id).setName(lastSong.title).setThumbnail(lastSong.thumbnail).build()
+						new SongBuilder().setId('').setName('Nothing playing...').setThumbnail(songPlaceholder).build()
 					)
-					.build();
+
+				if (lastSong) {
+					c
+						.setLastSong(
+							new SongBuilder().setId(lastSong.id).setName(lastSong.title).setThumbnail(lastSong.thumbnail).build()
+						)
+				}
+
+				return c.build();
 			});
 
 			return channels || [];

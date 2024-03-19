@@ -7,18 +7,14 @@
 	import { MessageBuilder, type MessageModel } from '$lib/models/message.model';
 	import { SongBuilder } from '$lib/models/song.model';
 	import { onMount, tick } from 'svelte';
-	import { createPersistentStore } from '../../../stores';
-	import { decodeJwt } from '$lib/jwt';
 	import { Button } from '$lib/components/ui/button';
+	import { user } from '../../../stores';
 
 	let ws: WebSocket;
 	let channelId = $page.params.id;
 	const wsUrl = `ws://localhost:8080/ws/channel/${channelId}`;
 
-	const tokenStore = createPersistentStore('accessToken', '');
-	let token = '';
-	let user = '';
-	let authorized = false;
+	let authorized = $user !== '';
 	let subscribed = false;
 
 	let channel: ChannelModel = new ChannelBuilder();
@@ -27,13 +23,6 @@
 	let player: Player;
 
 	let chatElement: HTMLElement;
-
-	tokenStore.subscribe((value) => {
-		token = value;
-		const decodedJwt = decodeJwt(token);
-		user = decodedJwt?.id || '';
-		authorized = token !== '';
-	});
 
 	async function addMessage(message: MessageModel) {
 		channel.messages = [...channel.messages, message];
@@ -109,7 +98,7 @@
 			const data: ChannelModel = await API.getChannel(channelId);
 			channel = data;
 
-			await API.getUserFollowedChannelIds(user)
+			await API.getUserFollowedChannelIds($user)
 				.then((data: string[]) => {
 					subscribed = data.includes(channelId);
 				})
@@ -120,7 +109,9 @@
 			scrollDown();
 
 			const secondsElapsed = (Date.now() - channel.lastSong.startTime) / 1000;
-			player.playSong(channel.lastSong, secondsElapsed);
+			if (channel.lastSong.id) {
+				player.playSong(channel.lastSong, secondsElapsed);
+			}
 			player.addToQueue(...channel.queue);
 
 			handleWebsocketConnection();
@@ -166,9 +157,9 @@
 			<div class="flex items-center gap-4">
 				<div class="flex gap-4">
 					<h1 class="text-2xl font-bold">{channel.name}</h1>
-					{#if authorized && channel.owner != user && subscribed === false}
+					{#if authorized && channel.owner != $user && subscribed === false}
 						<Button on:click={subscribe}>Subscribe</Button>
-					{:else if subscribed}
+					{:else if subscribed && channel.owner != $user}
 						<Button variant="outline">
 							<span class="material-symbols-outlined text-primary text-base mr-2"> done </span>
 							Subscribed
