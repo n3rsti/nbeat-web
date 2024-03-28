@@ -63,6 +63,11 @@ export class SongModel {
 		this._startTime = startTime;
 	}
 
+	get isPlaying(): boolean {
+		console.log(this.startTime + this.duration * 1000)
+		return this.startTime + this.duration * 1000 > new Date().getTime();
+	}
+
 	get readableDuration() {
 		const seconds = this.duration;
 

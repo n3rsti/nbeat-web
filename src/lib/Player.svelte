@@ -12,7 +12,6 @@
 
 	let muted = true;
 	let volume = 20;
-	let arrVolume = [20];
 	let ready = false;
 	$: {
 		if (ready) {
@@ -60,7 +59,11 @@
 			elapsed = currentSong.duration;
 		}
 
-		formattedElapsed = formatSongDuration(elapsed);
+		if (elapsed <= currentSong.duration) {
+			formattedElapsed = formatSongDuration(elapsed);
+		} else {
+			formattedElapsed = formatSongDuration(currentSong.duration);
+		}
 	}
 
 	function onPlayerReady() {
@@ -111,6 +114,8 @@
 	});
 
 	export function playSong(song: SongModel, startSeconds: number = 0) {
+		elapsed = startSeconds;
+		updateElapsed();
 		currentSong = song;
 
 		if (player && player.loadVideoById) {

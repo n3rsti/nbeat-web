@@ -95,29 +95,30 @@
 				class="rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-gray-50 transition-colors duration-75"
 				data-v0-t="card"
 			>
-				<div class="p-4">
-					<div class="grid gap-2 w-full">
+				<div class="p-4 h-full">
+					<div class="flex flex-col justify-between gap-2 w-full h-full">
 						<div class="flex items-center gap-2">
 							<div class="flex flex-col">
 								<h3 class="font-semibold">{channel.name}</h3>
+								<p class="text-sm text-muted-foreground h-fit">
+									{channel.description}
+								</p>
 							</div>
 						</div>
-						<div class="grid gap-2">
+						<div class="flex flex-col gap-2">
 							{#if channel.lastSong.id}
 								<div class="flex items-center gap-2">
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="24"
-										height="24"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										class="w-4 h-4 opacity-60"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg
-									>
-									<span class="text-sm text-gray-900 font-semibold"> Now playing </span>
+									{#if channel.lastSong.isPlaying}
+										<span class="material-symbols-outlined text-xl text-muted-foreground">
+											headphones
+										</span>
+										<span class="text-sm text-gray-900 font-semibold">Now playing </span>
+									{:else}
+										<span class="material-symbols-outlined text-xl text-muted-foreground">
+											artist
+										</span>
+										<span class="text-sm text-gray-900 font-semibold">Last played</span>
+									{/if}
 								</div>
 								<div class="grid grid-cols-[auto_1fr] items-center gap-2 w-full">
 									<img

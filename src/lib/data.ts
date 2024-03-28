@@ -218,6 +218,7 @@ export const API = {
 				_id: string,
 				name: string,
 				owner: string,
+				description: string,
 				lastPlayedSong: any,
 			}
 
@@ -228,6 +229,7 @@ export const API = {
 					.setId(channel._id)
 					.setName(channel.name)
 					.setOwner(channel.owner)
+					.setDescription(channel.description || '')
 
 					.setLastSong(
 						new SongBuilder().setId('').setName('Nothing playing...').setThumbnail(songPlaceholder).build()
@@ -236,7 +238,13 @@ export const API = {
 				if (lastSong) {
 					c
 						.setLastSong(
-							new SongBuilder().setId(lastSong.id).setName(lastSong.title).setThumbnail(lastSong.thumbnail).build()
+							new SongBuilder()
+								.setId(lastSong.id)
+								.setName(lastSong.title)
+								.setThumbnail(lastSong.thumbnail)
+								.setDuration(lastSong.duration)
+								.setStartTime(lastSong.song_start_time)
+								.build()
 						)
 				}
 
