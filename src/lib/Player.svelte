@@ -2,6 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { SongBuilder, SongModel } from './models/song.model';
 	import songPlaceholder from '$lib/assets/song-placeholder.png';
+	import { Slider } from '$lib/components/ui/slider';
 
 	let currentSong: SongModel = new SongBuilder()
 		.setName('Nothing playing...')
@@ -11,7 +12,17 @@
 
 	let muted = true;
 	let volume = 20;
+	let arrVolume = [20];
+	let ready = false;
+	$: {
+		if (ready) {
+			setVolume();
+		}
+	}
+
 	let elapsed = 0;
+	$: arrElapsed = [elapsed];
+
 	let formattedElapsed = '00:00';
 
 	let player: YT.Player;
@@ -174,14 +185,12 @@
 					</div>
 				</div>
 				<div class="flex">
-					<input
-						type="range"
-						min="0"
+					<Slider
+						min={0}
 						max={currentSong.duration}
-						step="1"
-						bind:value={elapsed}
-						class="w-1/3 bg-blue-200"
-						disabled
+						step={1}
+						bind:value={arrElapsed}
+						class="w-1/3"
 					/>
 
 					<button on:click={toggleMute} class="flex items-center justify-center">
@@ -201,6 +210,8 @@
 						on:input={setVolume}
 						bind:value={volume}
 					/>
+
+					<!-- <Slider class="w-32" min={0} max={100} step={1} bind:value={arrVolume} /> -->
 				</div>
 			</div>
 		</div>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { API } from '$lib/data';
-	import { createPersistentStore } from '../../stores';
+	import { jwtStore } from '../../stores';
 
 	let username: string = '';
 	let password: string = '';
@@ -14,9 +14,8 @@
 		if (request.status === 200) {
 			const data = await request.json();
 			const accessToken = data.access_token;
-			console.log(accessToken);
 
-			createPersistentStore('accessToken', accessToken);
+			jwtStore.set(accessToken);
 
 			goto('/');
 		} else {

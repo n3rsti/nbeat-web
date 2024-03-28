@@ -14,11 +14,13 @@
 	let channelId = $page.params.id;
 	const wsUrl = `ws://localhost:8080/ws/channel/${channelId}`;
 
-	let authorized = $user !== '';
+	$: authorized = $user !== '';
 	let subscribed = false;
 
-	let channel: ChannelModel = new ChannelBuilder();
+	let channel: ChannelModel = new ChannelBuilder().setName('.');
 	let message: string = '';
+
+	let loaded = false;
 
 	let player: Player;
 
@@ -118,6 +120,8 @@
 		} catch (err) {
 			console.error(err);
 		}
+
+		loaded = true;
 	});
 
 	async function scrollDown() {
@@ -157,9 +161,9 @@
 			<div class="flex items-center gap-4">
 				<div class="flex gap-4">
 					<h1 class="text-2xl font-bold">{channel.name}</h1>
-					{#if authorized && channel.owner != $user && subscribed === false}
+					{#if loaded && authorized && channel.owner != $user && subscribed === false}
 						<Button on:click={subscribe}>Subscribe</Button>
-					{:else if subscribed && channel.owner != $user}
+					{:else if loaded && subscribed && channel.owner != $user}
 						<Button variant="outline">
 							<span class="material-symbols-outlined text-primary text-base mr-2"> done </span>
 							Subscribed

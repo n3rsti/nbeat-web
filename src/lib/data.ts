@@ -3,7 +3,7 @@ import { get } from "svelte/store";
 import { ChannelBuilder, ChannelModel } from "./models/channel.model";
 import { MessageBuilder } from "./models/message.model";
 import { SongBuilder, SongModel } from "./models/song.model";
-import { createPersistentStore } from "../stores";
+import { jwtStore } from "../stores";
 
 import songPlaceholder from '$lib/assets/song-placeholder.png';
 
@@ -20,8 +20,7 @@ function formatResponseError(func: CallableFunction, response: Response) {
 }
 
 async function fetchAuthenticated(url: string, options?: RequestInit): Promise<Response> {
-	const accessTokenStore = createPersistentStore('accessToken', '');
-	const token = get(accessTokenStore);
+	const token = get(jwtStore);
 
 	if (token) {
 		if (!options) {
@@ -35,7 +34,7 @@ async function fetchAuthenticated(url: string, options?: RequestInit): Promise<R
 
 	const request = await fetch(url, options);
 	if (request.status === 401) {
-		accessTokenStore.set('')
+		jwtStore.set('')
 		localStorage.removeItem('accessToken');
 		goto("/login")
 	}

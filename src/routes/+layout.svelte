@@ -1,16 +1,19 @@
 <script>
 	import { onMount } from 'svelte';
 	import '../app.css';
-	import { createPersistentStore, user } from '../stores';
+	import { user, jwtStore } from '../stores';
 	import { decodeJwt } from '$lib/jwt';
 
 	onMount(() => {
-		const accessTokenStore = createPersistentStore('accessToken', '');
-		accessTokenStore.subscribe((value) => {
-			const decodedJwt = decodeJwt(value);
-			$user = decodedJwt?.id || '';
+		jwtStore.subscribe((value) => {
+			if (value !== '') {
+				const decodedJwt = decodeJwt(value);
+				$user = decodedJwt?.id || '';
+			}
 		});
 	});
+
+	$: console.log('store', $jwtStore);
 </script>
 
 <slot />
