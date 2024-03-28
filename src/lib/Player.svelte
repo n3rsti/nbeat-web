@@ -191,6 +191,7 @@
 						step={1}
 						bind:value={arrElapsed}
 						class="w-1/3"
+						disabled
 					/>
 
 					<button on:click={toggleMute} class="flex items-center justify-center">

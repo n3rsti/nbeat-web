@@ -74,9 +74,10 @@ export const API = {
 		return response
 	},
 
-	async createChannel(name: string) {
+	async createChannel(channel: ChannelModel) {
 		const body = {
-			name: name,
+			name: channel.name,
+			description: channel.description,
 		}
 
 		const response = await fetchAuthenticated(`${ENDPOINT}/channel`, {
@@ -102,6 +103,7 @@ export const API = {
 				.setId(data.channel._id)
 				.setName(data.channel.name)
 				.setOwner(data.channel.owner)
+				.setDescription(data.channel.description || "")
 				.setMessages(
 					data.channel.messages.map((message) => {
 						let newMessage = new MessageBuilder()
@@ -247,5 +249,13 @@ export const API = {
 
 		throw formatResponseError(this.getUserFollowedChannels, response);
 
+	},
+
+	async deleteChannel(channelId: string) {
+		const response = await fetchAuthenticated(`${ENDPOINT}/channel/${channelId}`, {
+			method: "DELETE"
+		})
+
+		return response;
 	}
 }

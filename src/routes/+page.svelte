@@ -2,8 +2,7 @@
 	import { goto } from '$app/navigation';
 	import Nav from '$lib/components/Nav.svelte';
 	import { API } from '$lib/data';
-	import type { ChannelModel } from '$lib/models/channel.model';
-	import { onMount } from 'svelte';
+	import { ChannelBuilder, type ChannelModel } from '$lib/models/channel.model';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label';
@@ -12,13 +11,18 @@
 	import { user } from '../stores';
 
 	let channelName = '';
+	let channelDescription = '';
 
 	let followedChannels: ChannelModel[] = [];
 
 	async function createChannel(event: SubmitEvent) {
 		event.preventDefault();
 
-		const request = await API.createChannel(channelName);
+		const newChannel = new ChannelBuilder()
+			.setName(channelName)
+			.setDescription(channelDescription)
+			.build();
+		const request = await API.createChannel(newChannel);
 		if (request.status === 201) {
 			const data = await request.json();
 			goto(`channel/${data._id}`);
@@ -70,7 +74,12 @@
 					/>
 
 					<Label for="name">Description</Label>
-					<Textarea placeholder="Enter short description." class="mt-2 mb-2" rows={3} />
+					<Textarea
+						placeholder="Enter short description."
+						class="mt-2 mb-2"
+						rows={3}
+						bind:value={channelDescription}
+					/>
 					<div class="flex justify-end">
 						<Button class="ml-auto px-5" type="submit">Create</Button>
 					</div>

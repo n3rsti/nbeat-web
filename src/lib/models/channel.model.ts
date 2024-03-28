@@ -8,14 +8,16 @@ export class ChannelModel {
 	private _lastSong: SongModel;
 	private _messages: MessageModel[];
 	private _queue: SongModel[];
+	private _description: string;
 
-	constructor(id: string, name: string, owner: string, lastSong: SongModel, messages: MessageModel[], queue: SongModel[]) {
+	constructor(id: string, name: string, owner: string, lastSong: SongModel, messages: MessageModel[], queue: SongModel[], description: string) {
 		this._id = id;
 		this._name = name;
 		this._owner = owner;
 		this._messages = messages;
 		this._lastSong = lastSong;
 		this._queue = queue;
+		this._description = description;
 	}
 
 	get id(): string {
@@ -65,11 +67,19 @@ export class ChannelModel {
 	set queue(queue: SongModel[]) {
 		this._queue = queue;
 	}
+
+	get description() {
+		return this._description;
+	}
+
+	set description(description: string) {
+		this._description = description;
+	}
 }
 
 export class ChannelBuilder extends ChannelModel {
 	constructor() {
-		super('', '', '', new SongBuilder().build(), [], [])
+		super('', '', '', new SongBuilder().build(), [], [], '');
 	}
 
 	setId(id: string) {
@@ -102,6 +112,11 @@ export class ChannelBuilder extends ChannelModel {
 		return this;
 	}
 
+	setDescription(description: string) {
+		this.description = description;
+		return this;
+	}
+
 	build() {
 		return new ChannelModel(
 			this.id,
@@ -110,6 +125,7 @@ export class ChannelBuilder extends ChannelModel {
 			this.lastSong,
 			this.messages,
 			this.queue,
+			this.description,
 		)
 	}
 }

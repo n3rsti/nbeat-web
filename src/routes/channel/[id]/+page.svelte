@@ -7,8 +7,10 @@
 	import { MessageBuilder, type MessageModel } from '$lib/models/message.model';
 	import { SongBuilder } from '$lib/models/song.model';
 	import { onMount, tick } from 'svelte';
-	import { Button } from '$lib/components/ui/button';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { user } from '../../../stores';
+	import { goto } from '$app/navigation';
 
 	let ws: WebSocket;
 	let channelId = $page.params.id;
@@ -29,6 +31,14 @@
 	async function addMessage(message: MessageModel) {
 		channel.messages = [...channel.messages, message];
 		scrollDown();
+	}
+
+	async function deleteChannel() {
+		const response = await API.deleteChannel(channelId);
+
+		if (response.status === 204) {
+			goto('/');
+		}
 	}
 
 	async function handleNewMessage(data: any) {
@@ -157,9 +167,9 @@
 <div class="h-screen flex flex-col">
 	<Nav />
 	<div class="p-8 flex flex-col flex-1 overflow-auto">
-		<header class="flex justify-between items-center px-8 mb-4">
-			<div class="flex items-center gap-4">
-				<div class="flex gap-4">
+		<header class="flex flex-col justify-center px-8 mb-4">
+			<div class="flex items-center gap-4 w-full">
+				<div class="flex justify-between gap-4 w-full">
 					<h1 class="text-2xl font-bold">{channel.name}</h1>
 					{#if loaded && authorized && channel.owner != $user && subscribed === false}
 						<Button on:click={subscribe}>Subscribe</Button>
@@ -168,9 +178,31 @@
 							<span class="material-symbols-outlined text-primary text-base mr-2"> done </span>
 							Subscribed
 						</Button>
+					{:else if channel.owner == $user}
+						<Dialog.Root>
+							<Dialog.Trigger>
+								<Button variant="destructive">Delete channel</Button>
+							</Dialog.Trigger>
+							<Dialog.Content class="sm:max-w-[425px]">
+								<Dialog.Header>
+									<Dialog.Title>Delete channel</Dialog.Title>
+									<Dialog.Description>
+										Are you sure you want to delete the channel <strong>{channel.name}</strong>?
+									</Dialog.Description>
+								</Dialog.Header>
+								<Dialog.Footer>
+									<Button type="submit" variant="destructive" on:click={deleteChannel}
+										>Delete</Button
+									>
+								</Dialog.Footer>
+							</Dialog.Content>
+						</Dialog.Root>
 					{/if}
 				</div>
 			</div>
+			<p class="text-sm text-muted-foreground">
+				{channel.description}
+			</p>
 		</header>
 
 		<Player bind:this={player} />

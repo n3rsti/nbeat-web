@@ -15,7 +15,7 @@
 	}
 </script>
 
-<header class="flex items-center h-[60px] px-4 border-b md:px-8 md:pl-16 relative">
+<header class="flex items-center h-[60px] px-4 border-b md:px-16 relative">
 	<div class="flex flex-1 mr-4 flex-row items-center gap-6">
 		<a class="inline-flex justify-center items-center gap-2 text-xl font-semibold" href="/">
 			<span class="material-symbols-outlined text-gray-700"> home </span>
