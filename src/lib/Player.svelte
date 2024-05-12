@@ -149,7 +149,6 @@
 	}
 
 	export function setVolume() {
-		console.log(volume);
 		if (player) {
 			player.setVolume(volume);
 			if (muted) {
@@ -159,11 +158,22 @@
 	}
 
 	function changeSongTime() {
-		dispatch('changeSongTime', `${Number(arrElapsed) - elapsed}`);
+		let ts = new Date().getTime();
+		const elapsed = (ts - currentSong.startTime) / 1000;
+		const delta = Number(arrElapsed) - elapsed;
+
+		dispatch('changeSongTime', `${delta}`);
 	}
 
 	export function changeElapsed(timeDiff: number) {
-		elapsed += timeDiff;
+		let ts = new Date().getTime();
+
+		currentSong.startTime -= timeDiff * 1000;
+		queue.forEach((song) => {
+			song.startTime -= timeDiff * 1000;
+		});
+
+		elapsed = (ts - currentSong.startTime) / 1000;
 		seekTo(elapsed);
 	}
 
@@ -171,6 +181,13 @@
 		if (player) {
 			player.seekTo(seconds, true);
 		}
+	}
+
+	function changeSong(song: SongModel) {
+		dispatch(
+			'changeSongTime',
+			`${(song.startTime - (currentSong.startTime + elapsed * 1000)) / 1000}`
+		);
 	}
 </script>
 
@@ -270,7 +287,7 @@
 		</div>
 		<div class="grid grid-cols-1 gap-2 w-full overflow-y-auto max-h-[150px] custom-scrollbar">
 			{#each queue as song}
-				<div class="grid grid-cols-queue items-center gap-4">
+				<div class="grid grid-cols-queue items-center gap-4" on:click={() => changeSong(song)}>
 					<div class="flex items-center gap-2">
 						<img
 							src={song.thumbnail}
