@@ -89,7 +89,7 @@
 		ws.onopen = () => {
 			const accessToken = localStorage.getItem('accessToken');
 			if (accessToken) {
-				ws.send(`Bearer ${accessToken}`);
+				ws.send(JSON.stringify({ type: 'auth', content: `Bearer ${accessToken}` }));
 			}
 		};
 		ws.onmessage = (event) => {
@@ -97,6 +97,9 @@
 
 			if (data.type === 'song') {
 				handleNewSong(data);
+			} else if (data.type === 'time') {
+				player.changeElapsed(Number(data.content));
+				return;
 			}
 
 			handleNewMessage(data);
@@ -144,11 +147,14 @@
 	function sendMessage(event: SubmitEvent) {
 		event.preventDefault();
 		if (message) {
-			ws.send(message);
+			ws.send(JSON.stringify({ type: 'text', content: message }));
 			message = '';
 		}
 	}
 
+	function changeSongTime(event: CustomEvent<number>) {
+		ws.send(JSON.stringify({ type: 'time', content: event.detail }));
+	}
 	async function subscribe() {
 		subscribed = true;
 
@@ -205,7 +211,7 @@
 			</p>
 		</header>
 
-		<Player bind:this={player} />
+		<Player bind:this={player} on:changeSongTime={changeSongTime} />
 		<h2 class="px-8 mb-4 text-xl font-semibold">Chat</h2>
 		<div bind:this={chatElement} class="flex flex-grow pt-4 px-8 overflow-y-auto custom-scrollbar">
 			<div class="flex flex-col gap-4">

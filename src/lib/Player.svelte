@@ -1,8 +1,12 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { createEventDispatcher, onDestroy, onMount } from 'svelte';
 	import { SongBuilder, SongModel } from './models/song.model';
 	import songPlaceholder from '$lib/assets/song-placeholder.png';
-	import { Slider } from '$lib/components/ui/slider';
+	import { user } from '../stores';
+
+	const dispatch = createEventDispatcher();
+
+	$: authorized = $user !== '';
 
 	let currentSong: SongModel = new SongBuilder()
 		.setName('Nothing playing...')
@@ -153,6 +157,21 @@
 			}
 		}
 	}
+
+	function changeSongTime() {
+		dispatch('changeSongTime', `${Number(arrElapsed) - elapsed}`);
+	}
+
+	export function changeElapsed(timeDiff: number) {
+		elapsed += timeDiff;
+		seekTo(elapsed);
+	}
+
+	function seekTo(seconds: number) {
+		if (player) {
+			player.seekTo(seconds, true);
+		}
+	}
 </script>
 
 <div id="player" class="hidden"></div>
@@ -190,13 +209,15 @@
 					</div>
 				</div>
 				<div class="flex">
-					<Slider
+					<input
+						type="range"
 						min={0}
 						max={currentSong.duration}
 						step={1}
 						bind:value={arrElapsed}
 						class="w-1/3"
-						disabled
+						on:input={changeSongTime}
+						disabled={!authorized}
 					/>
 
 					<button on:click={toggleMute} class="flex items-center justify-center">
