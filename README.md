@@ -1,5 +1,5 @@
 # NBeat
-Song syncing interface for [ncloud-web](https://github.com/n3rsti/nbeat-web)
+Song syncing interface for [nbeat-web](https://github.com/n3rsti/nbeat-web)
 
 ![ncloud showcase](nbeat_showcase.png)
 ## Developing
